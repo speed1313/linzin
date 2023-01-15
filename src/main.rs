@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // ファイル読み込み
     let content = fs::read_to_string(&args[1])?;
-
+    let content = skip_comment(&content); // コメントを削除
     let ast = parser::parse_expr(&content); // パース
     println!("AST:\n{:#?}\n", ast);
     match ast {
@@ -36,4 +36,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+// strip comment from input
+fn skip_comment(input: &str) -> String {
+    let mut new = String::new();
+    for i in input.lines() {
+        match i.find("//"){
+            Some(start) => new.push_str(&i[..start]),
+            None => new.push_str(i),
+        }
+    }
+    dbg!(&new);
+    new
 }

@@ -246,6 +246,8 @@ pub fn parse_expr(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     }
 }
 
+
+
 /// 関数適用をパース。
 fn parse_app(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     let (i, _) = multispace0(i)?;

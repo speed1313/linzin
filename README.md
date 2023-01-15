@@ -4,7 +4,7 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 
 
 ## TODO
-- [ ] //で一行コメント機能
+- [x] //で一行コメント機能
 - [ ] アフィン型追加
 - [ ] 評価器の実装
 - [ ] ガベージコレクションの実装(マークアンドスイープ)

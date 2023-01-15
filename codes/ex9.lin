@@ -1,3 +1,10 @@
-let x : lin bool = lin true; // comment
-let y : lin bool = lin false; // let statement
-lin <x, y> // expression
+// this is comment
+lin fn x : lin (lin bool * lin bool) { // comment
+    split x as a, b {
+        if a {
+            b // return value
+        } else {
+            b // return value
+        }
+    }
+}
