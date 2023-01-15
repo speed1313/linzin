@@ -8,6 +8,7 @@ type VarToType = BTreeMap<String, Option<parser::TypeExpr>>;
 pub struct TypeEnv {
     env_lin: TypeEnvStack, // lin用
     env_un: TypeEnvStack,  // un用
+    env_aff: TypeEnvStack, // aff用
 }
 
 impl TypeEnv {
@@ -15,6 +16,7 @@ impl TypeEnv {
         TypeEnv {
             env_lin: TypeEnvStack::new(),
             env_un: TypeEnvStack::new(),
+            env_aff: TypeEnvStack::new(),
         }
     }
 
@@ -22,35 +24,78 @@ impl TypeEnv {
     fn push(&mut self, depth: usize) {
         self.env_lin.push(depth);
         self.env_un.push(depth);
+        self.env_aff.push(depth);
     }
 
     /// 型環境をpop
-    fn pop(&mut self, depth: usize) -> (Option<VarToType>, Option<VarToType>) {
+    fn pop(&mut self, depth: usize) -> (Option<VarToType>, Option<VarToType>, Option<VarToType>) {
         let t1 = self.env_lin.pop(depth);
         let t2 = self.env_un.pop(depth);
-        (t1, t2)
+        let t3 = self.env_aff.pop(depth);
+        (t1, t2, t3)
     }
 
     /// 型環境へ変数と型をpush
     fn insert(&mut self, key: String, value: parser::TypeExpr) {
         if value.qual == parser::Qual::Lin {
             self.env_lin.insert(key, value);
-        } else {
+        } else if value.qual == parser::Qual::Un {
             self.env_un.insert(key, value);
+        } else{
+            self.env_aff.insert(key, value);
         }
     }
 
     /// linとunの型環境からget_mutし、depthが大きい方を返す
     fn get_mut(&mut self, key: &str) -> Option<&mut Option<parser::TypeExpr>> {
-        match (self.env_lin.get_mut(key), self.env_un.get_mut(key)) {
-            (Some((d1, t1)), Some((d2, t2))) => match d1.cmp(&d2) {
-                Ordering::Less => Some(t2),
-                Ordering::Greater => Some(t1),
-                Ordering::Equal => panic!("invalid type environment"),
-            },
-            (Some((_, t1)), None) => Some(t1),
-            (None, Some((_, t2))) => Some(t2),
-            _ => None,
+        if let Some((d1,t1)) = self.env_lin.get_mut(key){
+            if let Some((d2, t2)) = self.env_un.get_mut(key){
+                if let Some((d3, t3)) = self.env_aff.get_mut(key){
+                    if d1 > d2 && d1 > d3 {
+                        Some(t1)
+                    } else if d2 > d1 && d2 > d3 {
+                        Some(t2)
+                    } else if d3 > d1 && d3 > d2 {
+                        Some(t3)
+                    } else{
+                        unreachable!();
+                    }
+                } else{
+                    match d1.cmp(&d2){
+                        Ordering::Greater => Some(t1),
+                        Ordering::Less => Some(t2),
+                        Ordering::Equal => unreachable!(),
+                    }
+                }
+            }else{
+                if let Some((d3, t3)) = self.env_aff.get_mut(key){
+                    match d1.cmp(&d3){
+                        Ordering::Greater => Some(t1),
+                        Ordering::Less => Some(t3),
+                        Ordering::Equal => unreachable!(),
+                    }
+                }else{
+                    Some(t1)
+                }
+            }
+        }else{
+            if let Some((d2, t2)) = self.env_un.get_mut(key){
+                if let Some((d3, t3)) = self.env_aff.get_mut(key){
+                    match d2.cmp(&d3){
+                        Ordering::Greater => Some(t2),
+                        Ordering::Less => Some(t3),
+                        Ordering::Equal => unreachable!(),
+                    }
+                }else{
+                    Some(t2)
+                }
+            }else{
+                if let Some((_, t3)) = self.env_aff.get_mut(key){
+                    Some(t3)
+                }else{
+                    unreachable!();
+                }
+            }
         }
     }
 }
@@ -150,9 +195,9 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
             // expr.qualがUnであり、
             // e1か、e2の型にlinが含まれていた場合、型付けエラー
             if expr.qual == parser::Qual::Un
-                && (t1.qual == parser::Qual::Lin || t2.qual == parser::Qual::Lin)
+                && (t1.qual == parser::Qual::Lin || t2.qual == parser::Qual::Lin || t1.qual == parser::Qual::Aff || t2.qual == parser::Qual::Aff)
             {
-                return Err("un型のペア内でlin型を利用している".into());
+                return Err("un型のペア内でlin型またはaff型を利用している".into());
             }
 
             // ペア型を返す
@@ -163,8 +208,13 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
 
             // un型の関数内では、lin型の自由変数をキャプチャできないため
             // lin用の型環境を置き換え
-            let env_prev = if expr.qual == parser::Qual::Un {
+            let env_prev_lin= if expr.qual == parser::Qual::Un {
                 Some(mem::take(&mut env.env_lin))
+            } else {
+                None
+            };
+            let env_prev_aff = if expr.qual == parser::Qual::Un {
+                Some(mem::take(&mut env.env_aff))
             } else {
                 None
             };
@@ -179,7 +229,7 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
             let t = typing(&e.expr, env, depth)?;
 
             // スタックをpopし、popした型環境の中にlin型が含まれていた場合、型付けエラー
-            let (elin, _) = env.pop(depth);
+            let (elin, _, _) = env.pop(depth);
             for (k, v) in elin.unwrap().iter() {
                 if v.is_some() {
                     return Err(format!("関数定義内でlin型の変数\"{k}\"を消費していない").into());
@@ -187,7 +237,10 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
             }
 
             // lin用の型環境を復元
-            if let Some(ep) = env_prev {
+            if let Some(ep) = env_prev_lin {
+                env.env_lin = ep;
+            }
+            if let Some(ep) = env_prev_aff {
                 env.env_lin = ep;
             }
 
@@ -211,8 +264,14 @@ fn typing_free<'a>(expr: &parser::FreeExpr, env: &mut TypeEnv, depth: usize) -> 
             return typing(&expr.expr, env, depth);
         }
     }
+    if let Some((_, t)) = env.env_aff.get_mut(&expr.var) {
+        if t.is_some() {
+            *t = None;
+            return typing(&expr.expr, env, depth);
+        }
+    }
     Err(format!(
-        "既にfreeしたか、lin型ではない変数\"{}\"をfreeしている",
+        "既にfreeしたか、lin型,aff型ではない変数\"{}\"をfreeしている",
         expr.var
     )
     .into())
@@ -264,7 +323,7 @@ fn typing_split<'a>(expr: &parser::SplitExpr, env: &mut TypeEnv, depth: usize) -
     let ret = typing(&expr.body, env, depth);
 
     // ローカル変数を削除
-    let (elin, _) = env.pop(depth);
+    let (elin, _, _) = env.pop(depth);
 
     // lin型の変数を消費しているかチェック
     for (k, v) in elin.unwrap().iter() {
@@ -283,10 +342,10 @@ fn typing_var<'a>(expr: &str, env: &mut TypeEnv) -> TResult<'a> {
         // 定義されている
         if let Some(t) = it {
             // 消費されていない
-            if t.qual == parser::Qual::Lin {
-                // lin型
+            if t.qual == parser::Qual::Lin || t.qual == parser::Qual::Aff {
+                // lin or aff型
                 let eret = t.clone();
-                *it = None; // linを消費
+                *it = None; // lin or affを消費
                 return Ok(eret);
             } else {
                 return Ok(t.clone());
@@ -318,7 +377,7 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
     let t2 = typing(&expr.expr2, env, depth)?;
 
     // lin型の変数を消費しているかチェック
-    let (elin, _) = env.pop(depth);
+    let (elin, _, _) = env.pop(depth);
     for (k, v) in elin.unwrap().iter() {
         if v.is_some() {
             return Err(format!("let式内でlin型の変数\"{k}\"を消費していない").into());

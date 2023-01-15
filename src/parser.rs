@@ -16,7 +16,7 @@
 //! <FREE>  := free <E>; <E>
 //! <APP>   := ( <E> <E> )
 //!
-//! <Q>     := lin | un
+//! <Q>     := lin | un | aff
 //!
 //! 値
 //! <QVAL>  := <Q> <VAL>
@@ -145,6 +145,7 @@ pub enum ValExpr {
 pub enum Qual {
     Lin, // 線形型
     Un,  // 制約のない一般的な型
+    Aff, // affine型
 }
 
 /// 修飾子付き値
@@ -198,10 +199,10 @@ pub struct TypeExpr {
 
 impl fmt::Display for TypeExpr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.qual == Qual::Lin {
-            write!(f, "lin {}", self.prim)
-        } else {
-            write!(f, "un {}", self.prim)
+        match self.qual{
+            Qual::Lin => write!(f, "lin {}", self.prim),
+            Qual::Un => write!(f, "un {}", self.prim),
+            Qual::Aff => write!(f, "aff {}", self.prim),
         }
     }
 }
@@ -241,6 +242,7 @@ pub fn parse_expr(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         "free" => parse_free(i),
         "lin" => parse_qval(Qual::Lin, i),
         "un" => parse_qval(Qual::Un, i),
+        "aff" => parse_qval(Qual::Aff, i),
         "(" => parse_app(i),
         _ => Ok((i, Expr::Var(val.to_string()))),
     }
@@ -409,11 +411,11 @@ fn parse_pair(i: &str) -> IResult<&str, ValExpr, VerboseError<&str>> {
 
 /// linとun修飾子をパース。
 fn parse_qual(i: &str) -> IResult<&str, Qual, VerboseError<&str>> {
-    let (i, val) = alt((tag("lin"), tag("un")))(i)?;
-    if val == "lin" {
-        Ok((i, Qual::Lin))
-    } else {
-        Ok((i, Qual::Un))
+    let (i, val) = alt((tag("lin"), tag("un"), tag("aff")))(i)?;
+    match val{
+        "lin" => Ok((i, Qual::Lin)),
+        "un" => Ok((i, Qual::Un)),
+        _ => Ok((i, Qual::Aff)),
     }
 }
 

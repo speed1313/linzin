@@ -1,0 +1,5 @@
+// affine type
+let x : lin bool = lin true;
+let y : lin bool = lin false;
+let z : aff bool = aff true;
+lin <x, y>
