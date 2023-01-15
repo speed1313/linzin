@@ -41,58 +41,58 @@ impl TypeEnv {
             self.env_lin.insert(key, value);
         } else if value.qual == parser::Qual::Un {
             self.env_un.insert(key, value);
-        } else{
+        } else {
             self.env_aff.insert(key, value);
         }
     }
 
     /// linとunの型環境からget_mutし、depthが大きい方を返す
     fn get_mut(&mut self, key: &str) -> Option<&mut Option<parser::TypeExpr>> {
-        if let Some((d1,t1)) = self.env_lin.get_mut(key){
-            if let Some((d2, t2)) = self.env_un.get_mut(key){
-                if let Some((d3, t3)) = self.env_aff.get_mut(key){
+        if let Some((d1, t1)) = self.env_lin.get_mut(key) {
+            if let Some((d2, t2)) = self.env_un.get_mut(key) {
+                if let Some((d3, t3)) = self.env_aff.get_mut(key) {
                     if d1 > d2 && d1 > d3 {
                         Some(t1)
                     } else if d2 > d1 && d2 > d3 {
                         Some(t2)
                     } else if d3 > d1 && d3 > d2 {
                         Some(t3)
-                    } else{
+                    } else {
                         unreachable!();
                     }
-                } else{
-                    match d1.cmp(&d2){
+                } else {
+                    match d1.cmp(&d2) {
                         Ordering::Greater => Some(t1),
                         Ordering::Less => Some(t2),
                         Ordering::Equal => unreachable!(),
                     }
                 }
-            }else{
-                if let Some((d3, t3)) = self.env_aff.get_mut(key){
-                    match d1.cmp(&d3){
+            } else {
+                if let Some((d3, t3)) = self.env_aff.get_mut(key) {
+                    match d1.cmp(&d3) {
                         Ordering::Greater => Some(t1),
                         Ordering::Less => Some(t3),
                         Ordering::Equal => unreachable!(),
                     }
-                }else{
+                } else {
                     Some(t1)
                 }
             }
-        }else{
-            if let Some((d2, t2)) = self.env_un.get_mut(key){
-                if let Some((d3, t3)) = self.env_aff.get_mut(key){
-                    match d2.cmp(&d3){
+        } else {
+            if let Some((d2, t2)) = self.env_un.get_mut(key) {
+                if let Some((d3, t3)) = self.env_aff.get_mut(key) {
+                    match d2.cmp(&d3) {
                         Ordering::Greater => Some(t2),
                         Ordering::Less => Some(t3),
                         Ordering::Equal => unreachable!(),
                     }
-                }else{
+                } else {
                     Some(t2)
                 }
-            }else{
-                if let Some((_, t3)) = self.env_aff.get_mut(key){
+            } else {
+                if let Some((_, t3)) = self.env_aff.get_mut(key) {
                     Some(t3)
-                }else{
+                } else {
                     unreachable!();
                 }
             }
@@ -195,7 +195,10 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
             // expr.qualがUnであり、
             // e1か、e2の型にlinが含まれていた場合、型付けエラー
             if expr.qual == parser::Qual::Un
-                && (t1.qual == parser::Qual::Lin || t2.qual == parser::Qual::Lin || t1.qual == parser::Qual::Aff || t2.qual == parser::Qual::Aff)
+                && (t1.qual == parser::Qual::Lin
+                    || t2.qual == parser::Qual::Lin
+                    || t1.qual == parser::Qual::Aff
+                    || t2.qual == parser::Qual::Aff)
             {
                 return Err("un型のペア内でlin型またはaff型を利用している".into());
             }
@@ -208,7 +211,7 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
 
             // un型の関数内では、lin型の自由変数をキャプチャできないため
             // lin用の型環境を置き換え
-            let env_prev_lin= if expr.qual == parser::Qual::Un {
+            let env_prev_lin = if expr.qual == parser::Qual::Un {
                 Some(mem::take(&mut env.env_lin))
             } else {
                 None

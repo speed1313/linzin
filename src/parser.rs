@@ -199,7 +199,7 @@ pub struct TypeExpr {
 
 impl fmt::Display for TypeExpr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.qual{
+        match self.qual {
             Qual::Lin => write!(f, "lin {}", self.prim),
             Qual::Un => write!(f, "un {}", self.prim),
             Qual::Aff => write!(f, "aff {}", self.prim),
@@ -247,8 +247,6 @@ pub fn parse_expr(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         _ => Ok((i, Expr::Var(val.to_string()))),
     }
 }
-
-
 
 /// 関数適用をパース。
 fn parse_app(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
@@ -412,7 +410,7 @@ fn parse_pair(i: &str) -> IResult<&str, ValExpr, VerboseError<&str>> {
 /// linとun修飾子をパース。
 fn parse_qual(i: &str) -> IResult<&str, Qual, VerboseError<&str>> {
     let (i, val) = alt((tag("lin"), tag("un"), tag("aff")))(i)?;
-    match val{
+    match val {
         "lin" => Ok((i, Qual::Lin)),
         "un" => Ok((i, Qual::Un)),
         _ => Ok((i, Qual::Aff)),

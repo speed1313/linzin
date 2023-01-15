@@ -1,7 +1,7 @@
+mod eval;
 mod helper;
 mod parser;
 mod typing;
-mod eval;
 
 use nom::error::convert_error;
 use std::{env, error::Error, fs};
@@ -37,7 +37,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         _ => (),
     }
 
-
     Ok(())
 }
 
@@ -45,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn skip_comment(input: &str) -> String {
     let mut new = String::new();
     for i in input.lines() {
-        match i.find("//"){
+        match i.find("//") {
             Some(start) => new.push_str(&i[..start]),
             None => new.push_str(i),
         }
@@ -53,4 +52,3 @@ fn skip_comment(input: &str) -> String {
     dbg!(&new);
     new
 }
-
