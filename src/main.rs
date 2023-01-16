@@ -28,10 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let a = typing::typing(&expr, &mut ctx, 0)?;
             println!("の型は\n{a}\nです。");
             let val_env = &mut eval::ValEnv::new();
-            println!(
-                "result: {:?}",
-                eval::eval(&expr, &mut ctx, val_env , 0)?
-            );
+            println!("result: {:?}", eval::eval(&expr, &mut ctx, val_env, 0)?);
         }
         Err(nom::Err::Error(e)) => {
             let msg = convert_error(content.as_str(), e);

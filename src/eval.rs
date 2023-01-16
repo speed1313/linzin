@@ -247,7 +247,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
         }
         None => (),
     }
-    match type_env.env_aff.get_mut(expr){
+    match type_env.env_aff.get_mut(expr) {
         Some(_) => *val = None,
         None => (),
     }
