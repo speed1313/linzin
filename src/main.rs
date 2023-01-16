@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // 型付け
             let a = typing::typing(&expr, &mut ctx, 0)?;
             println!("の型は\n{a}\nです。");
-            //println!("result: {}", eval(expr, ctx, 0).to_string());
+            println!("result: {}", eval::eval(&expr, &mut ctx,&mut eval::ValEnv::new(), 0).to_string());
         }
         Err(nom::Err::Error(e)) => {
             let msg = convert_error(content.as_str(), e);

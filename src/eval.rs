@@ -4,6 +4,8 @@
 //! typingと同様にして値を評価する.
 //! Eの部分は評価したらboolになる?のでそれを評価して分岐
 //! とりあえずtupleはむし
+//! 将来的には<VAL>を返し, 受け取り, matchで分岐処理する
+
 use crate::{helper::safe_add, parser, typing};
 use std::{borrow::Cow, cmp::Ordering, collections::BTreeMap, mem};
 
@@ -145,7 +147,12 @@ fn eval_if(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> bool {
-    todo!();
+    let e1 = eval(&expr.cond_expr, type_env, val_env, depth);
+    if e1 {
+        eval(&expr.then_expr, type_env, val_env, depth)
+    }else{
+        eval(&expr.else_expr, type_env, val_env, depth)
+    }
 }
 
 fn eval_split(
@@ -157,15 +164,35 @@ fn eval_split(
     todo!();
 }
 fn eval_var(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv) -> bool {
-    todo!();
+    let ret = val_env.get_mut(expr);
+    if let Some(it) = ret {
+        if let Some(v) = it {
+            *v
+        } else {
+            panic!("変数 {} は未定義です", expr);
+        }
+    } else {
+        panic!("変数 {} は未定義です", expr);
+    }
+
 }
+
 fn eval_let(
     expr: &parser::LetExpr,
     type_env: &mut typing::TypeEnv,
     val_env: &mut ValEnv,
     depth: usize,
 ) -> bool {
-    todo!();
+    let v1 = eval(&expr.expr1, type_env,val_env,depth);
+    let mut depth = depth;
+    safe_add(&mut depth,&1,||"変数のスコープのネストが深すぎる").unwrap();
+    val_env.push(depth);
+    val_env.insert(expr.var.clone(), v1);
+
+    let v2 = eval(&expr.expr2, type_env, val_env, depth);
+
+    _ = val_env.pop(depth);
+    v2
 }
 
 #[cfg(test)]
