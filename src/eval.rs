@@ -314,4 +314,26 @@ mod tests {
         }
         unreachable!();
     }
+    #[test]
+    fn test_eval_app() {
+        let input = r"let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool * lin bool) {
+            split x as a, b {
+                if a {
+                    b
+                } else {
+                    b
+                }
+            }
+        };
+        (z  lin <lin true, lin false>)";
+        if let Ok((_, expr)) = parser::parse_expr(input) {
+            let result = match eval(&expr, &mut typing::TypeEnv::new(), &mut ValEnv::new(), 0) {
+                Ok(ReturnVal::Bool(v)) => v,
+                _ => panic!("eval_appのテストでエラーが発生しました"),
+            };
+            assert_eq!(false, result);
+            return;
+        }
+        unreachable!();
+    }
 }
