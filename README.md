@@ -43,6 +43,18 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 ```
 $ git clone https://github.com/speed1313/linzin.git
 $ cd linzin
+$ cat codes/ex12.lin
+let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool * lin bool) {
+    split x as a, b {
+        if a {
+            b
+        } else {
+            b
+        }
+    }
+};
+(z  lin <lin true, lin false>)
+
 $ cargo run codes/ex12.lin
 ```
 - 出力例
