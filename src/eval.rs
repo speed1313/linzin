@@ -7,16 +7,17 @@
 //! 将来的には<VAL>を返し, 受け取り, matchで分岐処理する
 
 use crate::{helper::safe_add, parser, typing};
-use std::{borrow::Cow, cmp::Ordering, collections::BTreeMap, mem};
+use std::{borrow::Cow, collections::BTreeMap};
 
 type VarToVal = BTreeMap<String, Option<ReturnVal>>;
 
 type VResult<'a> = Result<ReturnVal, Cow<'a, str>>;
 
-#[derive(Debug,Clone,Eq,PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ReturnVal {
-    Bool(bool),       // 真偽値リテラル
-    Pair(bool, bool), // ペア
+    Bool(bool),          // 真偽値リテラル
+    Pair(bool, bool),    // ペア
+    Fun(parser::FnExpr), // 関数
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -48,7 +49,7 @@ impl ValEnv {
     }
 
     fn get_mut(&mut self, key: &str) -> Option<&mut Option<ReturnVal>> {
-        if let Some((d, t)) = self.env.get_mut(key) {
+        if let Some((_, t)) = self.env.get_mut(key) {
             Some(t)
         } else {
             unreachable!()
@@ -121,9 +122,12 @@ fn eval_app<'a>(
     depth: usize,
 ) -> VResult<'a> {
     let arg = eval(&expr.expr2, type_env, val_env, depth)?;
-    match &*expr.expr1{
-        parser::Expr::QVal(val)=> match val{
-            parser::QValExpr{qual:_,val:parser::ValExpr::Fun(f)} => {
+    match &*expr.expr1 {
+        parser::Expr::QVal(val) => match val {
+            parser::QValExpr {
+                qual: _,
+                val: parser::ValExpr::Fun(f),
+            } => {
                 let mut depth = depth;
                 safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
                 val_env.push(depth);
@@ -131,9 +135,28 @@ fn eval_app<'a>(
                 let ret = eval(&f.expr, type_env, val_env, depth);
                 val_env.pop(depth);
                 ret
-            },
+            }
             _ => Err("function should be applied to a function".into()),
         },
+        parser::Expr::Var(a) => {
+            if let Some(v) = val_env.clone().get_mut(a).unwrap() {
+                match v {
+                    ReturnVal::Fun(f) => {
+                        let mut depth = depth;
+                        safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+                        val_env.push(depth);
+
+                        val_env.insert(f.var.clone(), arg.clone());
+                        let e = eval(&f.expr, type_env, val_env, depth);
+                        val_env.pop(depth);
+                        e
+                    }
+                    _ => return Err("function should be applied to a function".into()),
+                }
+            } else {
+                Err("function should be applied to a function".into())
+            }
+        }
         _ => Err("function should be applied to a function".into()),
     }
 }
@@ -153,10 +176,8 @@ fn eval_qval<'a>(
                 _ => Err("pair values should be bool".into()),
             }
         }
-        parser::ValExpr::Fun(e) => {
-            
-            todo!("return function value");
-        }
+        // 使用する時までASTを保持しておく
+        parser::ValExpr::Fun(e) => Ok(ReturnVal::Fun(e.clone())),
     };
     p
 }
@@ -166,8 +187,12 @@ fn eval_free<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
-
-    todo!();
+    if let Some(a) = val_env.get_mut(&expr.var) {
+        *a = None;
+        eval(&expr.expr, type_env, val_env, depth)
+    } else {
+        Err("no variable to free".into())
+    }
 }
 fn eval_if<'a>(
     expr: &parser::IfExpr,
@@ -194,7 +219,7 @@ fn eval_split<'a>(
 ) -> VResult<'a> {
     let e = eval(&expr.expr, type_env, val_env, depth)?;
     let mut depth = depth;
-    safe_add(&mut depth, &1,|| "変数スコープのネストが深すぎる")?;
+    safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
     match e {
         ReturnVal::Pair(v1, v2) => {
             val_env.push(depth);
@@ -209,15 +234,19 @@ fn eval_split<'a>(
     ret
 }
 fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv) -> VResult<'a> {
-    let ret = val_env.get_mut(expr);
-    if let Some(it) = ret {
-        if let Some(v) = it {
-            Ok(v.clone())
-        } else {
-            panic!("変数 {} は未定義です", expr);
+    let val = val_env.get_mut(expr);
+    let val = match val {
+        Some(v) => v,
+        None => return Err("変数が見つかりません".into()),
+    };
+    let ret = val.clone();
+    // もし変数がlinなら, 使用後freeする.
+    match type_env.env_lin.get_mut(expr) {
+        Some(_) => {
+            *val = None;
+            ret.ok_or("変数が見つかりません".into())
         }
-    } else {
-        panic!("変数 {} は未定義です", expr);
+        None => ret.ok_or("変数が見つかりません".into()),
     }
 }
 

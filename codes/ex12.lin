@@ -1,0 +1,10 @@
+let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool * lin bool) {
+    split x as a, b {
+        if a {
+            b
+        } else {
+            b
+        }
+    }
+};
+(z  lin <lin true, lin false>)

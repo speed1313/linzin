@@ -6,9 +6,9 @@ type VarToType = BTreeMap<String, Option<parser::TypeExpr>>;
 /// 型環境
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TypeEnv {
-    env_lin: TypeEnvStack, // lin用
-    env_un: TypeEnvStack,  // un用
-    env_aff: TypeEnvStack, // aff用
+    pub env_lin: TypeEnvStack, // lin用
+    pub env_un: TypeEnvStack,  // un用
+    pub env_aff: TypeEnvStack, // aff用
 }
 
 impl TypeEnv {
@@ -47,7 +47,7 @@ impl TypeEnv {
     }
 
     /// linとunの型環境からget_mutし、depthが大きい方を返す
-    fn get_mut(&mut self, key: &str) -> Option<&mut Option<parser::TypeExpr>> {
+    pub(crate) fn get_mut(&mut self, key: &str) -> Option<&mut Option<parser::TypeExpr>> {
         if let Some((d1, t1)) = self.env_lin.get_mut(key) {
             if let Some((d2, t2)) = self.env_un.get_mut(key) {
                 if let Some((d3, t3)) = self.env_aff.get_mut(key) {
@@ -102,7 +102,7 @@ impl TypeEnv {
 
 /// 型環境のスタック
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct TypeEnvStack {
+pub struct TypeEnvStack {
     vars: BTreeMap<usize, VarToType>,
 }
 
@@ -131,7 +131,7 @@ impl TypeEnvStack {
     }
 
     // スタックを上からたどっていき、はじめに見つかる変数の型を取得
-    fn get_mut(&mut self, key: &str) -> Option<(usize, &mut Option<parser::TypeExpr>)> {
+    pub(crate) fn get_mut(&mut self, key: &str) -> Option<(usize, &mut Option<parser::TypeExpr>)> {
         for (depth, elm) in self.vars.iter_mut().rev() {
             if let Some(e) = elm.get_mut(key) {
                 return Some((*depth, e));

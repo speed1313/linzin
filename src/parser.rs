@@ -47,7 +47,7 @@ use std::fmt::{self};
 /// ```text
 /// <E> := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL>
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
     Let(LetExpr),     // let式
     If(IfExpr),       // if式
@@ -65,7 +65,7 @@ pub enum Expr {
 ///
 /// (expr1 expr2)
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppExpr {
     pub expr1: Box<Expr>,
     pub expr2: Box<Expr>,
@@ -82,7 +82,7 @@ pub struct AppExpr {
 ///     else_expr
 /// }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IfExpr {
     pub cond_expr: Box<Expr>,
     pub then_expr: Box<Expr>,
@@ -98,7 +98,7 @@ pub struct IfExpr {
 ///     body
 /// }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SplitExpr {
     pub expr: Box<Expr>,
     pub left: String,
@@ -113,7 +113,7 @@ pub struct SplitExpr {
 ///
 /// let var : ty = expr1 { expr2 }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LetExpr {
     pub var: String,
     pub ty: TypeExpr,
@@ -129,7 +129,7 @@ pub struct LetExpr {
 /// <PAIR> := < <E> , <E> >
 /// <FN>   := fn <VAR> : <T> { <E> }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValExpr {
     Bool(bool),                 // 真偽値リテラル
     Pair(Box<Expr>, Box<Expr>), // ペア
@@ -153,7 +153,7 @@ pub enum Qual {
 /// ```
 /// <QV> := <Q> <VAL>
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct QValExpr {
     pub qual: Qual,
     pub val: ValExpr,
@@ -166,7 +166,7 @@ pub struct QValExpr {
 ///
 /// fn var : ty { expr }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FnExpr {
     pub var: String,
     pub ty: TypeExpr,
@@ -180,7 +180,7 @@ pub struct FnExpr {
 ///
 /// free var; expr
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FreeExpr {
     pub var: String,
     pub expr: Box<Expr>,
