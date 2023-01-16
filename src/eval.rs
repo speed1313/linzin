@@ -9,11 +9,11 @@
 use crate::{helper::safe_add, parser, typing};
 use std::{borrow::Cow, cmp::Ordering, collections::BTreeMap, mem};
 
-type VarToVal = BTreeMap<String, Option<bool>>;
+type VarToVal = BTreeMap<String, Option<ReturnVal>>;
 
 type VResult<'a> = Result<ReturnVal, Cow<'a, str>>;
 
-#[derive(Debug)]
+#[derive(Debug,Clone,Eq,PartialEq)]
 pub enum ReturnVal {
     Bool(bool),       // 真偽値リテラル
     Pair(bool, bool), // ペア
@@ -43,11 +43,11 @@ impl ValEnv {
     }
 
     /// 変数環境へ変数と値をpush
-    fn insert(&mut self, key: String, value: bool) {
+    fn insert(&mut self, key: String, value: ReturnVal) {
         self.env.insert(key, value);
     }
 
-    fn get_mut(&mut self, key: &str) -> Option<&mut Option<bool>> {
+    fn get_mut(&mut self, key: &str) -> Option<&mut Option<ReturnVal>> {
         if let Some((d, t)) = self.env.get_mut(key) {
             Some(t)
         } else {
@@ -80,14 +80,14 @@ impl ValEnvStack {
     }
 
     // スタックの最も上にある変数環境に変数名と値を追加
-    fn insert(&mut self, key: String, value: bool) {
+    fn insert(&mut self, key: String, value: ReturnVal) {
         if let Some(last) = self.vars.iter_mut().next_back() {
             last.1.insert(key, Some(value));
         }
     }
 
     // スタックを上から辿っていき, 初めに見つかる変数の値を取得
-    fn get_mut(&mut self, key: &str) -> Option<(usize, &mut Option<bool>)> {
+    fn get_mut(&mut self, key: &str) -> Option<(usize, &mut Option<ReturnVal>)> {
         for (depth, elm) in self.vars.iter_mut().rev() {
             if let Some(e) = elm.get_mut(key) {
                 return Some((*depth, e));
@@ -120,8 +120,22 @@ fn eval_app<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
-    
-    todo!();
+    let arg = eval(&expr.expr2, type_env, val_env, depth)?;
+    match &*expr.expr1{
+        parser::Expr::QVal(val)=> match val{
+            parser::QValExpr{qual:_,val:parser::ValExpr::Fun(f)} => {
+                let mut depth = depth;
+                safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+                val_env.push(depth);
+                val_env.insert(f.var.clone(), arg);
+                let ret = eval(&f.expr, type_env, val_env, depth);
+                val_env.pop(depth);
+                ret
+            },
+            _ => Err("function should be applied to a function".into()),
+        },
+        _ => Err("function should be applied to a function".into()),
+    }
 }
 fn eval_qval<'a>(
     expr: &parser::QValExpr,
@@ -140,6 +154,7 @@ fn eval_qval<'a>(
             }
         }
         parser::ValExpr::Fun(e) => {
+            
             todo!("return function value");
         }
     };
@@ -183,8 +198,8 @@ fn eval_split<'a>(
     match e {
         ReturnVal::Pair(v1, v2) => {
             val_env.push(depth);
-            val_env.insert(expr.left.clone(), v1);
-            val_env.insert(expr.right.clone(), v2);
+            val_env.insert(expr.left.clone(), ReturnVal::Bool(v1));
+            val_env.insert(expr.right.clone(), ReturnVal::Bool(v2));
         }
         _ => panic!("splitの引数はpair型でなければなりません"),
     }
@@ -197,7 +212,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     let ret = val_env.get_mut(expr);
     if let Some(it) = ret {
         if let Some(v) = it {
-            Ok(ReturnVal::Bool(*v))
+            Ok(v.clone())
         } else {
             panic!("変数 {} は未定義です", expr);
         }
@@ -213,10 +228,7 @@ fn eval_let<'a>(
     depth: usize,
 ) -> VResult<'a> {
     let v1 = match eval(&expr.expr1, type_env, val_env, depth) {
-        Ok(v) => match v {
-            ReturnVal::Bool(v) => v,
-            _ => panic!("let式の左辺はbool型でなければなりません"),
-        },
+        Ok(v) => v,
         Err(e) => return Err(e),
     };
     let mut depth = depth;
