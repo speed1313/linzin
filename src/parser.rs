@@ -40,7 +40,7 @@ use nom::{
     sequence::delimited,
     IResult,
 };
-use std::fmt;
+use std::fmt::{self};
 
 /// 抽象構文木
 ///
