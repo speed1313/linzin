@@ -1,0 +1,11 @@
+let x : un bool = un true;
+let y : un bool = un false;
+(lin fn x : un (un bool * un bool) {
+    split x as a, b {
+        if a {
+            b
+        } else {
+            b
+        }
+    }
+} un <x, y>)

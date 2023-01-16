@@ -244,10 +244,14 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     match type_env.env_lin.get_mut(expr) {
         Some(_) => {
             *val = None;
-            ret.ok_or("変数が見つかりません".into())
         }
-        None => ret.ok_or("変数が見つかりません".into()),
+        None => (),
     }
+    match type_env.env_aff.get_mut(expr){
+        Some(_) => *val = None,
+        None => (),
+    }
+    ret.ok_or("変数が見つかりません".into())
 }
 
 fn eval_let<'a>(
