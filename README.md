@@ -73,8 +73,8 @@ result: Bool(false)
 ```
 
 ### REPLで遊ぶ
-REPLでは, let文でglobal変数を定義するようにしています.
-
+REPLでは, letでglobal変数を定義するようにしています.
+状態を作ってしまうため好ましくないですが, REPLを使いやすくするため便宜的にこうしています.
 ```
 $ cargo run
 Welcome to Linzin!
