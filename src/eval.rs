@@ -126,7 +126,7 @@ fn eval_app<'a>(
                 val: parser::ValExpr::Fun(f),
             } => {
                 let mut depth = depth;
-                safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+                safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
                 val_env.push(depth);
                 val_env.insert(f.var.clone(), arg);
                 let ret = eval(&f.expr, type_env, val_env, depth);
@@ -140,7 +140,7 @@ fn eval_app<'a>(
                 match v {
                     ReturnVal::Fun(f) => {
                         let mut depth = depth;
-                        safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+                        safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
                         val_env.push(depth);
 
                         val_env.insert(f.var.clone(), arg.clone());
@@ -199,7 +199,7 @@ fn eval_if<'a>(
 ) -> VResult<'a> {
     let e1 = match eval(&expr.cond_expr, type_env, val_env, depth) {
         Ok(ReturnVal::Bool(v)) => v,
-        _ => panic!("if文の条件式はbool型でなければなりません"),
+        _ => panic!("Conditional expression in if statements must be of type bool"),
     };
     if e1 {
         eval(&expr.then_expr, type_env, val_env, depth)
@@ -216,14 +216,14 @@ fn eval_split<'a>(
 ) -> VResult<'a> {
     let e = eval(&expr.expr, type_env, val_env, depth)?;
     let mut depth = depth;
-    safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+    safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
     match e {
         ReturnVal::Pair(v1, v2) => {
             val_env.push(depth);
             val_env.insert(expr.left.clone(), ReturnVal::Bool(v1));
             val_env.insert(expr.right.clone(), ReturnVal::Bool(v2));
         }
-        _ => panic!("splitの引数はpair型でなければなりません"),
+        _ => panic!("The argument of split must be of type pair"),
     }
     let ret = eval(&expr.body, type_env, val_env, depth);
     let _ = val_env.pop(depth);
@@ -234,7 +234,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     let val = val_env.get_mut(expr);
     let val = match val {
         Some(v) => v,
-        None => return Err("変数が見つかりません".into()),
+        None => return Err("variable not found".into()),
     };
     let ret = val.clone();
     // もし変数がlinなら, 使用後freeする.
@@ -248,7 +248,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
         Some(_) => *val = None,
         None => (),
     }
-    ret.ok_or("変数が見つかりません".into())
+    ret.ok_or("variable not found".into())
 }
 
 fn eval_let<'a>(
@@ -262,7 +262,7 @@ fn eval_let<'a>(
         Err(e) => return Err(e),
     };
     let mut depth = depth;
-    safe_add(&mut depth, &1, || "変数のスコープのネストが深すぎる").unwrap();
+    safe_add(&mut depth, &1, || "Variable scope nesting is too deep").unwrap();
     val_env.push(depth);
     val_env.insert(expr.var.clone(), v1);
 
@@ -308,7 +308,7 @@ mod tests {
         });
         let result = match eval(&expr, &mut typing::TypeEnv::new(), &mut ValEnv::new(), 0) {
             Ok(ReturnVal::Bool(v)) => v,
-            _ => panic!("eval_varのテストでエラーが発生しました"),
+            _ => panic!("error happend in eval_var test"),
         };
         assert_eq!(true, result);
     }
@@ -324,7 +324,7 @@ mod tests {
         if let Ok((_, expr)) = parser::parse_expr(input) {
             let result = match eval(&expr, &mut typing::TypeEnv::new(), &mut ValEnv::new(), 0) {
                 Ok(ReturnVal::Bool(v)) => v,
-                _ => panic!("eval_varのテストでエラーが発生しました"),
+                _ => panic!("error happend in eval_if test"),
             };
             assert_eq!(false, result);
             return;
@@ -346,7 +346,7 @@ mod tests {
         if let Ok((_, expr)) = parser::parse_expr(input) {
             let result = match eval(&expr, &mut typing::TypeEnv::new(), &mut ValEnv::new(), 0) {
                 Ok(ReturnVal::Bool(v)) => v,
-                _ => panic!("eval_appのテストでエラーが発生しました"),
+                _ => panic!("error happend in eval_app test"),
             };
             assert_eq!(false, result);
             return;

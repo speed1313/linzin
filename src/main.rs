@@ -2,8 +2,8 @@ mod eval;
 mod helper;
 mod parser;
 mod typing;
-
 use nom::error::convert_error;
+use nom::{error::VerboseError, IResult};
 use rustyline::Editor;
 use std::{env, error::Error, fs};
 
@@ -27,40 +27,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             if let Ok(readline) = rl.readline(">> ") {
                 let content = skip_comment(&readline); // コメントを削除
                 if content.eq("env") {
-                    println!("type env:\n {:?}", ctx);
-                    println!("val env:\n {:?}", val_env);
+                    println!("[Type Environment]:\n {:?}\n", ctx);
+                    println!("[Variable Environment]\n {:?}\n", val_env);
                     continue;
                 }
                 let ast = parser::parse_expr(&content); // パース
-                match ast {
-                    Ok((_, expr)) => {
-                        println!("式:\n{content}");
-                        // 型付け
-                        match typing::typing(&expr, &mut ctx, 0) {
-                            Ok(a) => println!("の型は\n{a}\nです。"),
-                            Err(e) => {
-                                println!("型付けエラー:\n{e}");
-                                continue;
-                            }
-                        }
-                        // println!("ctx: {:?}", ctx);
-                        let result;
-                        match eval::eval(&expr, &mut ctx, &mut val_env, 0) {
-                            Ok(v) => result = v,
-                            Err(e) => {
-                                println!("評価エラー:\n{e}");
-                                continue;
-                            }
-                        }
-                        // println!("val_env: {:?}", val_env);
-                        println!("評価結果: {:?}\n", result);
-                    }
-                    Err(nom::Err::Error(e)) => {
-                        let msg = convert_error(content.as_str(), e);
-                        eprintln!("パースエラー:\n{msg}");
-                    }
-                    _ => (),
-                }
+                interpret(&content, &mut ctx, &mut val_env, ast);
             } else {
                 break;
             }
@@ -73,26 +45,47 @@ fn main() -> Result<(), Box<dyn Error>> {
     let content = skip_comment(&content); // コメントを削除
     let ast = parser::parse_expr(&content); // パース
     println!("AST:\n{:#?}\n", ast);
+    let mut ctx = typing::TypeEnv::new();
+    let mut val_env = eval::ValEnv::new();
+    interpret(&content, &mut ctx, &mut val_env, ast);
+    Ok(())
+}
+
+fn interpret(
+    content: &str,
+    ctx: &mut typing::TypeEnv,
+    val_env: &mut eval::ValEnv,
+    ast: IResult<&str, parser::Expr, VerboseError<&str>>,
+) {
     match ast {
         Ok((_, expr)) => {
-            let mut ctx = typing::TypeEnv::new();
-            println!("式:\n{content}");
+            println!("[Expression]\n{content}\n");
+            // typing
+            let ty = match typing::typing(&expr, ctx, 0) {
+                Ok(a) => a,
+                Err(e) => {
+                    println!("typing error:\n{e}");
+                    return;
+                }
+            };
+            println!("[Type]\n{:?}\n", ty);
 
-            // 型付け
-            let a = typing::typing(&expr, &mut ctx, 0)?;
-            println!("の型は\n{a}\nです。");
-            let val_env = &mut eval::ValEnv::new();
-            println!("result: {:?}", eval::eval(&expr, &mut ctx, val_env, 0)?);
+            // evaluation
+            let result = match eval::eval(&expr, ctx, val_env, 0) {
+                Ok(v) => v,
+                Err(e) => {
+                    println!("evaluation error:\n{e}");
+                    return;
+                }
+            };
+            println!("[Evaluation]\n{:?}\n", result);
         }
         Err(nom::Err::Error(e)) => {
-            let msg = convert_error(content.as_str(), e);
-            eprintln!("パースエラー:\n{msg}");
-            return Err(msg.into());
+            let msg = convert_error(content, e);
+            eprintln!("parse error:\n{msg}");
         }
         _ => (),
     }
-
-    Ok(())
 }
 
 // strip comment from input

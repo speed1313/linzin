@@ -2,21 +2,21 @@
 
 Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/rust_zero/tree/master/ch09/linz).
 
-
-「ゼロから学ぶRust」で題材とされたLinzというλ計算に線形型システムを適用した独自の線形型言語の拡張実装です.
+Linzin is an extended implementation of Linz, a linear type system programming language which is the subject of "ゼロから学ぶRust".
 
 ## TODO
-- [x] //で一行コメント機能
-- [x] アフィン型追加
-- [x] 評価器の実装
-- [ ] ガベージコレクションの実装(マークアンドスイープ)
-   - un型はfreeが使えないようにしている. それをガベコレする(REPLでない場合, un型が使われないとわかった瞬間にfreeすれば良さそう?)
-   - heap型を定義して, heap型はglobal変数みたいに扱ってガベコレ?
-- [x] replで実行できるようにする
+- [x] one line comment with // feature
+- [x] add affine type
+- [x] implement interpreter, or evaluator
+- [ ] implement garbage collection(mark and sweep)
+  - how to do that?
+     - the memory of un type can not be free, so Linzin should free the memory automatically?
+     - defining heap type and set it to free by gc?
+- [x] let the interpreter to be used in REPL format
 
-## Linzinの構文
+## Syntax of Linzin
 ```text
-<VAR>   := 1文字以上のアルファベットから成り立つ変数
+<VAR>   := (alphabet)+ ;Variables consisting of one or more letters of the alphabet
 
 <E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF>
 <LET>   := let <VAR> : <T> = <E>; <E>
@@ -24,11 +24,11 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 <SPLIT> := split <E> as <VAR>, <VAR> { <E> }
 <FREE>  := free <E>; <E>
 <APP>   := ( <E> <E> )
-<DEF>   := def <VAR> : <T> = <E>; (REPL専用)
+<DEF>   := def <VAR> : <T> = <E>; (for REPL use only)
 
 <Q>     := lin | un | aff
 ```
-- 値
+- Value
 ```text
 <QVAL>  := <Q> <VAL>
 <VAL>   := <B> | <PAIR> | <FN>
@@ -36,7 +36,7 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 <PAIR>  := < <E> , <E> >
 <FN>    := fn <VAR> : <T> { <E> }
 ```
-- 型
+- Type
 ```text
 <T>     := <Q> <P>
 <P>     := bool |
@@ -61,34 +61,39 @@ let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool *
 
 $ cargo run codes/ex12.lin
 ```
-- 出力例
+- Output Example
 ```
 AST:
 ...
 ...
 
-式:
+[Expression]
 let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool * lin bool) {    split x as a, b {        if a {            b        } else {            b        }    }};(z  lin <lin true, lin false>)
-の型は
-lin bool
-です。
-result: Bool(false)
+
+[Type]
+TypeExpr { qual: Lin, prim: Bool }
+
+[Evaluation]
+Bool(false)
+
 ```
 
-### REPLで遊ぶ
-REPLでは, def構文でglobal変数を定義できるようにしています.
+### Playing Linzin with the REPL function
+When you play Linzin in REPL, global variables can be defined with the def syntax.
 ```
 $ cargo run
 Welcome to Linzin!
 Let's type <expression>
 To show the environment, please type env
 >> def x : lin bool = lin true;
-式:
+[Expression]
 def x : lin bool = lin true;
-の型は
-lin bool
-です。
-評価結果: Bool(true)
+
+[Type]
+TypeExpr { qual: Lin, prim: Bool }
+
+[Evaluation]
+Bool(true)
 
 >> (lin fn x : lin bool {
     if x {
@@ -97,24 +102,29 @@ lin bool
         un <un false, un true>
     }
 } x)
-式:
+[Expression]
 (lin fn x : lin bool {    if x {        un <un true, un false>    } else {        un <un false, un true>    }} x)
-の型は
-un (un bool * un bool)
-です。
-評価結果: Pair(true, false)
+
+[Type]
+TypeExpr { qual: Un, prim: Pair(TypeExpr { qual: Un, prim: Bool }, TypeExpr { qual: Un, prim: Bool }) }
+
+[Evaluation]
+Pair(true, false)
 
 >> env
-type env:
+[Type Environment]:
  TypeEnv { env_lin: TypeEnvStack { vars: {0: {"x": None}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
-val env:
+
+[Variable Environment]
  ValEnv { env: ValEnvStack { vars: {0: {"x": None}} } }
 
 >> x
-式:
+[Expression]
 x
-型付けエラー:
-"x"という変数は定義されていないか、利用済みか、キャプチャできない
+
+typing error:
+The variable "x" is either not defined, already used, or cannot be captured.
+>>
 
 ```
 

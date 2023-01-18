@@ -169,7 +169,7 @@ fn typing_app<'a>(expr: &parser::AppExpr, env: &mut TypeEnv, depth: usize) -> TR
             t_arg = a; // 引数の型
             t_ret = b; // 返り値の型
         }
-        _ => return Err("関数型でない".into()),
+        _ => return Err("not a function type".into()),
     }
 
     // 引数部分
@@ -179,7 +179,7 @@ fn typing_app<'a>(expr: &parser::AppExpr, env: &mut TypeEnv, depth: usize) -> TR
     if *t_arg == t2 {
         Ok(*t_ret)
     } else {
-        Err("関数適用時における引数の型が異なる".into())
+        Err("different argument type when applying functions".into())
     }
 }
 
@@ -201,7 +201,7 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
                     || t1.qual == parser::Qual::Aff
                     || t2.qual == parser::Qual::Aff)
             {
-                return Err("un型のペア内でlin型またはaff型を利用している".into());
+                return Err("using lin or aff type within a pair of un types".into());
             }
 
             // ペア型を返す
@@ -225,7 +225,7 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
 
             // depthをインクリメントしてpush
             let mut depth = depth;
-            safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+            safe_add(&mut depth, &1, || "variable scope nesting is too deep")?;
             env.push(depth);
             env.insert(e.var.clone(), e.ty.clone());
 
@@ -236,7 +236,7 @@ fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> 
             let (elin, _, _) = env.pop(depth);
             for (k, v) in elin.unwrap().iter() {
                 if v.is_some() {
-                    return Err(format!("関数定義内でlin型の変数\"{k}\"を消費していない").into());
+                    return Err(format!("the variable \"{k}\" of type lin is not consumed in the function definition.").into());
                 }
             }
 
@@ -275,7 +275,7 @@ fn typing_free<'a>(expr: &parser::FreeExpr, env: &mut TypeEnv, depth: usize) -> 
         }
     }
     Err(format!(
-        "既にfreeしたか、lin型,aff型ではない変数\"{}\"をfreeしている",
+        "The variable \"{}\" has already been freed or is not a lin or aff type.",
         expr.var
     )
     .into())
@@ -286,7 +286,7 @@ fn typing_if<'a>(expr: &parser::IfExpr, env: &mut TypeEnv, depth: usize) -> TRes
     let t1 = typing(&expr.cond_expr, env, depth)?;
     // 条件の式の型はbool
     if t1.prim != parser::PrimType::Bool {
-        return Err("ifの条件式がboolでない".into());
+        return Err("conditional expression in if-statement is not bool".into());
     }
 
     let mut e = env.clone();
@@ -296,7 +296,7 @@ fn typing_if<'a>(expr: &parser::IfExpr, env: &mut TypeEnv, depth: usize) -> TRes
     // thenとelse部の型は同じで、
     // thenとelse部評価後の型環境は同じかをチェック
     if t2 != t3 || e != *env {
-        return Err("ifのthenとelseの式の型が異なる".into());
+        return Err("the types of then and else expressions in if statement are different.".into());
     }
 
     Ok(t2)
@@ -310,7 +310,7 @@ fn typing_split<'a>(expr: &parser::SplitExpr, env: &mut TypeEnv, depth: usize) -
 
     let t1 = typing(&expr.expr, env, depth)?;
     let mut depth = depth;
-    safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+    safe_add(&mut depth, &1, || "variable scope nesting is too deep")?;
 
     match t1.prim {
         parser::PrimType::Pair(p1, p2) => {
@@ -320,7 +320,7 @@ fn typing_split<'a>(expr: &parser::SplitExpr, env: &mut TypeEnv, depth: usize) -
             env.insert(expr.right.clone(), *p2);
         }
         _ => {
-            return Err("splitの引数がペア型でない".into());
+            return Err("argument of split is not a pair type".into());
         }
     }
 
@@ -332,7 +332,10 @@ fn typing_split<'a>(expr: &parser::SplitExpr, env: &mut TypeEnv, depth: usize) -
     // lin型の変数を消費しているかチェック
     for (k, v) in elin.unwrap().iter() {
         if v.is_some() {
-            return Err(format!("splitの式内でlin型の変数\"{k}\"を消費していない").into());
+            return Err(format!(
+                "the variable \"{k}\" of type lin is not consumed in the expression of split."
+            )
+            .into());
         }
     }
 
@@ -359,7 +362,7 @@ fn typing_var<'a>(expr: &str, env: &mut TypeEnv) -> TResult<'a> {
     }
 
     Err(format!(
-        "\"{}\"という変数は定義されていないか、利用済みか、キャプチャできない",
+        "The variable \"{}\" is either not defined, already used, or cannot be captured.",
         expr
     )
     .into())
@@ -371,11 +374,11 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
     let t1 = typing(&expr.expr1, env, depth)?;
     // 束縛変数の型をチェック
     if t1 != expr.ty {
-        return Err(format!("変数\"{}\"の型が異なる", expr.var).into());
+        return Err(format!("The type of the variable \"{}\" is different.", expr.var).into());
     }
     // 関数内
     let mut depth = depth;
-    safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
+    safe_add(&mut depth, &1, || "variable scope nesting is too deep")?;
     env.push(depth);
     env.insert(expr.var.clone(), t1); // 変数の型をinsert
     let t2 = typing(&expr.expr2, env, depth)?;
@@ -384,7 +387,9 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
     let (elin, _eun, _eaff) = env.pop(depth);
     for (k, v) in elin.unwrap().iter() {
         if v.is_some() {
-            return Err(format!("let式内でlin型の変数\"{k}\"を消費していない").into());
+            return Err(
+                format!("lin type variable \"{k}\" does not consumed in let expression").into(),
+            );
         }
     }
     // un, affはglobalに保存
@@ -413,7 +418,7 @@ fn typing_def<'a>(expr: &parser::DefExpr, env: &mut TypeEnv, depth: usize) -> TR
     let t1 = typing(&expr.expr, env, depth)?;
     // 束縛変数の型をチェック
     if t1 != expr.ty {
-        return Err(format!("変数\"{}\"の型が異なる", expr.var).into());
+        return Err(format!("the type of the variable \"{}\" is different.", expr.var).into());
     }
     env.insert(expr.var.clone(), t1.clone()); // 変数の型をinsert
 
