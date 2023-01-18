@@ -33,7 +33,7 @@ impl ValEnv {
     }
 
     /// 変数環境をpush
-    fn push(&mut self, depth: usize) {
+    pub fn push(&mut self, depth: usize) {
         self.env.push(depth);
     }
 
@@ -52,7 +52,7 @@ impl ValEnv {
         if let Some((_, t)) = self.env.get_mut(key) {
             Some(t)
         } else {
-            unreachable!()
+            None
         }
     }
 }
@@ -270,8 +270,14 @@ fn eval_let<'a>(
     val_env.insert(expr.var.clone(), v1);
 
     let v2 = eval(&expr.expr2, type_env, val_env, depth);
+    if let Some(table) = val_env.pop(depth) {
+        if depth == 1 {
+            for (keys, value) in table {
+                val_env.insert(keys, value.unwrap());
+            }
+        }
+    }
 
-    _ = val_env.pop(depth);
     v2
 }
 

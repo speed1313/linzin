@@ -1,0 +1,10 @@
+let z : un (un (un bool * un bool) -> un bool) = un fn x : un (un bool * un bool) {
+    split x as a, b {
+        if a {
+            b
+        } else {
+            b
+        }
+    }
+};
+(z  un <un true, un false>)

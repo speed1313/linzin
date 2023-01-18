@@ -21,7 +21,7 @@ impl TypeEnv {
     }
 
     /// 型環境をpush
-    fn push(&mut self, depth: usize) {
+    pub fn push(&mut self, depth: usize) {
         self.env_lin.push(depth);
         self.env_un.push(depth);
         self.env_aff.push(depth);
@@ -58,7 +58,7 @@ impl TypeEnv {
                     } else if d3 > d1 && d3 > d2 {
                         Some(t3)
                     } else {
-                        unreachable!();
+                        None
                     }
                 } else {
                     match d1.cmp(&d2) {
@@ -93,7 +93,7 @@ impl TypeEnv {
                 if let Some((_, t3)) = self.env_aff.get_mut(key) {
                     Some(t3)
                 } else {
-                    unreachable!();
+                    None
                 }
             }
         }
@@ -351,7 +351,8 @@ fn typing_var<'a>(expr: &str, env: &mut TypeEnv) -> TResult<'a> {
                 *it = None; // lin or affを消費
                 return Ok(eret);
             } else {
-                return Ok(t.clone());
+                let t = t.clone();
+                return Ok(t);
             }
         }
     }
@@ -371,7 +372,6 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
     if t1 != expr.ty {
         return Err(format!("変数\"{}\"の型が異なる", expr.var).into());
     }
-
     // 関数内
     let mut depth = depth;
     safe_add(&mut depth, &1, || "変数スコープのネストが深すぎる")?;
@@ -380,10 +380,26 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
     let t2 = typing(&expr.expr2, env, depth)?;
 
     // lin型の変数を消費しているかチェック
-    let (elin, _, _) = env.pop(depth);
+    let (elin, eun, eaff) = env.pop(depth);
     for (k, v) in elin.unwrap().iter() {
         if v.is_some() {
             return Err(format!("let式内でlin型の変数\"{k}\"を消費していない").into());
+        }
+    }
+    // un, affはglobalに保存
+    if depth == 1 {
+        // globalを用意
+        for (k, v) in eun.unwrap().iter() {
+            match v {
+                Some(v) => env.env_un.insert(k.to_string(), v.clone()),
+                None => (),
+            }
+        }
+        for (k, v) in eaff.unwrap().iter() {
+            match v {
+                Some(v) => env.env_aff.insert(k.to_string(), v.clone()),
+                None => (),
+            }
         }
     }
 

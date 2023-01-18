@@ -10,6 +10,7 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 - [x] アフィン型追加
 - [x] 評価器の実装
 - [ ] ガベージコレクションの実装(マークアンドスイープ)
+- [x] replで実行できるようにする
 
 ## Linzinの構文
 ```text
@@ -59,7 +60,6 @@ $ cargo run codes/ex12.lin
 ```
 - 出力例
 ```
-[src/main.rs:55] &new = "let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool * lin bool) {    split x as a, b {        if a {            b        } else {            b        }    }};(z  lin <lin true, lin false>)"
 AST:
 ...
 ...
@@ -72,8 +72,46 @@ lin bool
 result: Bool(false)
 ```
 
+### REPLで遊ぶ
+REPLでは, let文でglobal変数を定義するようにしています.
 
----
+```
+$ cargo run
+Welcome to Linzin!
+Let's type <expression>
+To show the environment, please type env
+>> env
+type env:
+ TypeEnv { env_lin: TypeEnvStack { vars: {0: {}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
+val env:
+ ValEnv { env: ValEnvStack { vars: {0: {}} } }
+>> let x : un bool = un true;
+if x {
+    un false
+} else {
+    un true
+}
+
+式:
+let x : un bool = un true;if x {    un false} else {    un true}
+の型は
+un bool
+です。
+評価結果: Bool(false)
+>> env
+type env:
+ TypeEnv { env_lin: TypeEnvStack { vars: {0: {}} }, env_un: TypeEnvStack { vars: {0: {"x": Some(TypeExpr { qual: Un, prim: Bool })}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
+val env:
+ ValEnv { env: ValEnvStack { vars: {0: {"x": Some(Bool(true))}} } }
+>> x
+式:
+x
+の型は
+un bool
+です。
+評価結果: Bool(true)
+```
+
 ## Ref.
 - ゼロから学ぶRust システムプログラミングの基礎から線形型システム, 高野祐輝, 講談社
 - https://github.com/ytakano/rust_zero
