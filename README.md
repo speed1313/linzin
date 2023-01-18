@@ -78,7 +78,7 @@ Bool(false)
 
 ```
 
-### Playing Linzin with the REPL function
+### Playing Linzin in REPL
 When you play Linzin in REPL, global variables can be defined with the def syntax.
 ```
 $ cargo run
