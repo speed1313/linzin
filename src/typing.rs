@@ -64,7 +64,7 @@ impl TypeEnv {
                     match d1.cmp(&d2) {
                         Ordering::Greater => Some(t1),
                         Ordering::Less => Some(t2),
-                        Ordering::Equal => unreachable!(),
+                        Ordering::Equal => None,
                     }
                 }
             } else {
@@ -72,7 +72,7 @@ impl TypeEnv {
                     match d1.cmp(&d3) {
                         Ordering::Greater => Some(t1),
                         Ordering::Less => Some(t3),
-                        Ordering::Equal => unreachable!(),
+                        Ordering::Equal => None,
                     }
                 } else {
                     Some(t1)
@@ -84,7 +84,7 @@ impl TypeEnv {
                     match d2.cmp(&d3) {
                         Ordering::Greater => Some(t2),
                         Ordering::Less => Some(t3),
-                        Ordering::Equal => unreachable!(),
+                        Ordering::Equal => None,
                     }
                 } else {
                     Some(t2)
@@ -154,6 +154,7 @@ pub fn typing<'a>(expr: &parser::Expr, env: &mut TypeEnv, depth: usize) -> TResu
         parser::Expr::Split(e) => typing_split(e, env, depth),
         parser::Expr::Var(e) => typing_var(e, env),
         parser::Expr::Let(e) => typing_let(e, env, depth),
+        parser::Expr::Def(e) => typing_def(e, env, depth),
     }
 }
 
@@ -380,13 +381,14 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
     let t2 = typing(&expr.expr2, env, depth)?;
 
     // lin型の変数を消費しているかチェック
-    let (elin, eun, eaff) = env.pop(depth);
+    let (elin, _eun, _eaff) = env.pop(depth);
     for (k, v) in elin.unwrap().iter() {
         if v.is_some() {
             return Err(format!("let式内でlin型の変数\"{k}\"を消費していない").into());
         }
     }
     // un, affはglobalに保存
+    /*
     if depth == 1 {
         // globalを用意
         for (k, v) in eun.unwrap().iter() {
@@ -401,7 +403,19 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
                 None => (),
             }
         }
-    }
+    }*/
 
     Ok(t2)
+}
+/// defの型付け
+fn typing_def<'a>(expr: &parser::DefExpr, env: &mut TypeEnv, depth: usize) -> TResult<'a> {
+    // 変数束縛
+    let t1 = typing(&expr.expr, env, depth)?;
+    // 束縛変数の型をチェック
+    if t1 != expr.ty {
+        return Err(format!("変数\"{}\"の型が異なる", expr.var).into());
+    }
+    env.insert(expr.var.clone(), t1.clone()); // 変数の型をinsert
+
+    Ok(t1)
 }

@@ -8,13 +8,14 @@
 //! ```text
 //! <VAR>   := 1文字以上のアルファベットから成り立つ変数
 //!
-//! <E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL>
+//! <E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF>
 //!
 //! <LET>   := let <VAR> : <T> = <E>; <E>
 //! <IF>    := if <E> { <E> } else { <E> }
 //! <SPLIT> := split <E> as <VAR>, <VAR> { <E> }
 //! <FREE>  := free <E>; <E>
 //! <APP>   := ( <E> <E> )
+//! <DEF>   := def <VAR> : <T> = <E>; (REPL専用)
 //!
 //! <Q>     := lin | un | aff
 //!
@@ -56,6 +57,7 @@ pub enum Expr {
     App(AppExpr),     // 関数適用
     Var(String),      // 変数
     QVal(QValExpr),   // 値
+    Def(DefExpr),     // 変数定義
 }
 
 /// 関数適用
@@ -119,6 +121,20 @@ pub struct LetExpr {
     pub ty: TypeExpr,
     pub expr1: Box<Expr>,
     pub expr2: Box<Expr>,
+}
+
+/// def
+///
+/// ```text
+/// <Def>   := def <VAR> : <T> = <E>;
+///
+/// def var : ty = expr1;
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefExpr {
+    pub var: String,
+    pub ty: TypeExpr,
+    pub expr: Box<Expr>,
 }
 
 /// 値。真偽値、関数、ペア値などになる
@@ -244,6 +260,7 @@ pub fn parse_expr(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         "un" => parse_qval(Qual::Un, i),
         "aff" => parse_qval(Qual::Aff, i),
         "(" => parse_app(i),
+        "def" => parse_def(i),
         _ => Ok((i, Expr::Var(val.to_string()))),
     }
 }
@@ -514,4 +531,36 @@ fn parse_type(i: &str) -> IResult<&str, TypeExpr, VerboseError<&str>> {
             },
         ))
     }
+}
+
+/// defをパース
+/// def <VAR> : <T> = <E>;
+fn parse_def(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
+    let (i, _) = multispace1(i)?;
+
+    let (i, var) = parse_var(i)?; // 束縛する変数
+
+    let (i, _) = multispace0(i)?;
+    let (i, _) = char(':')(i)?;
+    let (i, _) = multispace0(i)?;
+
+    let (i, ty) = parse_type(i)?; // 変数の型
+
+    let (i, _) = multispace0(i)?;
+    let (i, _) = char('=')(i)?;
+    let (i, _) = multispace0(i)?;
+
+    let (i, e1) = parse_expr(i)?; // 変数の値
+    let (i, _) = multispace0(i)?;
+
+    let (i, _) = char(';')(i)?;
+
+    Ok((
+        i,
+        Expr::Def(DefExpr {
+            var,
+            ty,
+            expr: Box::new(e1),
+        }),
+    ))
 }

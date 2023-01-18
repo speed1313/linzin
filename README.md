@@ -16,12 +16,13 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 ```text
 <VAR>   := 1文字以上のアルファベットから成り立つ変数
 
-<E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL>
+<E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF>
 <LET>   := let <VAR> : <T> = <E>; <E>
 <IF>    := if <E> { <E> } else { <E> }
 <SPLIT> := split <E> as <VAR>, <VAR> { <E> }
 <FREE>  := free <E>; <E>
 <APP>   := ( <E> <E> )
+<DEF>   := def <VAR> : <T> = <E>; (REPL専用)
 
 <Q>     := lin | un | aff
 ```
@@ -73,43 +74,42 @@ result: Bool(false)
 ```
 
 ### REPLで遊ぶ
-REPLでは, letでglobal変数を定義するようにしています.
-状態を作ってしまうため好ましくないですが, REPLを使いやすくするため便宜的にこうしています.
+REPLでは, def構文でglobal変数を定義できるようにしています.
 ```
 $ cargo run
 Welcome to Linzin!
 Let's type <expression>
 To show the environment, please type env
->> env
-type env:
- TypeEnv { env_lin: TypeEnvStack { vars: {0: {}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
-val env:
- ValEnv { env: ValEnvStack { vars: {0: {}} } }
->> let x : un bool = un true;
-if x {
-    un false
-} else {
-    un true
-}
-
+>> def x : lin bool = lin true;
 式:
-let x : un bool = un true;if x {    un false} else {    un true}
+def x : lin bool = lin true;
 の型は
-un bool
+lin bool
 です。
-評価結果: Bool(false)
+評価結果: Bool(true)
+>> (lin fn x : lin bool {
+    if x {
+        un <un true, un false>
+    } else {
+        un <un false, un true>
+    }
+} x)
+式:
+(lin fn x : lin bool {    if x {        un <un true, un false>    } else {        un <un false, un true>    }} x)
+の型は
+un (un bool * un bool)
+です。
+評価結果: Pair(true, false)
 >> env
 type env:
- TypeEnv { env_lin: TypeEnvStack { vars: {0: {}} }, env_un: TypeEnvStack { vars: {0: {"x": Some(TypeExpr { qual: Un, prim: Bool })}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
+ TypeEnv { env_lin: TypeEnvStack { vars: {0: {"x": None}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
 val env:
- ValEnv { env: ValEnvStack { vars: {0: {"x": Some(Bool(true))}} } }
+ ValEnv { env: ValEnvStack { vars: {0: {"x": None}} } }
 >> x
 式:
 x
-の型は
-un bool
-です。
-評価結果: Bool(true)
+型付けエラー:
+"x"という変数は定義されていないか、利用済みか、キャプチャできない
 ```
 
 ## Ref.

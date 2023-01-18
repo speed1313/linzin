@@ -1,10 +1,6 @@
 //! 線形型システムの評価器
 //!
 //!
-//! typingと同様にして値を評価する.
-//! Eの部分は評価したらboolになる?のでそれを評価して分岐
-//! とりあえずtupleはむし
-//! 将来的には<VAL>を返し, 受け取り, matchで分岐処理する
 
 use crate::{helper::safe_add, parser, typing};
 use std::{borrow::Cow, collections::BTreeMap};
@@ -112,6 +108,7 @@ pub fn eval<'a>(
         parser::Expr::Split(e) => eval_split(e, type_env, val_env, depth),
         parser::Expr::Var(e) => eval_var(e, type_env, val_env),
         parser::Expr::Let(e) => eval_let(e, type_env, val_env, depth),
+        parser::Expr::Def(e) => eval_def(e, type_env, val_env, depth),
     }
 }
 
@@ -279,6 +276,20 @@ fn eval_let<'a>(
     }
 
     v2
+}
+
+fn eval_def<'a>(
+    expr: &parser::DefExpr,
+    type_env: &mut typing::TypeEnv,
+    val_env: &mut ValEnv,
+    depth: usize,
+) -> VResult<'a> {
+    let v1 = match eval(&expr.expr, type_env, val_env, depth) {
+        Ok(v) => v,
+        Err(e) => return Err(e),
+    };
+    val_env.insert(expr.var.clone(), v1.clone());
+    Ok(v1)
 }
 
 #[cfg(test)]

@@ -19,12 +19,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         // prepare global environment
         ctx.push(0);
         val_env.push(0);
-        println!("Welcome to Linzin!\nLet's type <expression>\nTo show the environment, please type env");
+        println!(
+            "Welcome to Linzin!\nLet's type <expression>\nTo show the environment, please type env"
+        );
         loop {
             // 1行読み込んでパースし成功すれば評価
             if let Ok(readline) = rl.readline(">> ") {
                 let content = skip_comment(&readline); // コメントを削除
-                if content.eq("env"){
+                if content.eq("env") {
                     println!("type env:\n {:?}", ctx);
                     println!("val env:\n {:?}", val_env);
                     continue;
