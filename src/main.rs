@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             }
                         }
                         // println!("val_env: {:?}", val_env);
-                        println!("評価結果: {:?}", result);
+                        println!("評価結果: {:?}\n", result);
                     }
                     Err(nom::Err::Error(e)) => {
                         let msg = convert_error(content.as_str(), e);

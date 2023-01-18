@@ -10,6 +10,8 @@ Linzin is a linear type system dirived from [Linz](https://github.com/ytakano/ru
 - [x] アフィン型追加
 - [x] 評価器の実装
 - [ ] ガベージコレクションの実装(マークアンドスイープ)
+   - un型はfreeが使えないようにしている. それをガベコレする(REPLでない場合, un型が使われないとわかった瞬間にfreeすれば良さそう?)
+   - heap型を定義して, heap型はglobal変数みたいに扱ってガベコレ?
 - [x] replで実行できるようにする
 
 ## Linzinの構文
@@ -87,6 +89,7 @@ def x : lin bool = lin true;
 lin bool
 です。
 評価結果: Bool(true)
+
 >> (lin fn x : lin bool {
     if x {
         un <un true, un false>
@@ -100,16 +103,19 @@ lin bool
 un (un bool * un bool)
 です。
 評価結果: Pair(true, false)
+
 >> env
 type env:
  TypeEnv { env_lin: TypeEnvStack { vars: {0: {"x": None}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
 val env:
  ValEnv { env: ValEnvStack { vars: {0: {"x": None}} } }
+
 >> x
 式:
 x
 型付けエラー:
 "x"という変数は定義されていないか、利用済みか、キャプチャできない
+
 ```
 
 ## Ref.
