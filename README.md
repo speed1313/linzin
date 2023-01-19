@@ -16,7 +16,7 @@ Linzin is an extended implementation of Linz, a linear type system programming l
 
 ## Syntax of Linzin
 ```text
-<VAR>   := (alphabet)+ ;Variables consisting of one or more letters of the alphabet
+<VAR>   := (alphabet)+ // Variables consisting of one or more letters of the alphabet
 
 <E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF>
 <LET>   := let <VAR> : <T> = <E>; <E>
