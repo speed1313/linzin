@@ -216,8 +216,8 @@ fn eval_free<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
-    if let Some(a) = val_env.get_mut(&expr.var) {
-        *a = None;
+    if let Some(_) = val_env.get_mut(&expr.var) {
+        let _ = val_env.remove(&expr.var);
         eval(&expr.expr, type_env, val_env, depth)
     } else {
         Err("no variable to free".into())

@@ -39,13 +39,14 @@ Linzin is an extended implementation of Linz, a linear type system programming l
 ```text
 <VAR>   := (alphabet)+ // Variables consisting of one or more letters of the alphabet
 
-<E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF>
+<E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF> | <ENV>
 <LET>   := let <VAR> : <T> = <E>; <E>
 <IF>    := if <E> { <E> } else { <E> }
 <SPLIT> := split <E> as <VAR>, <VAR> { <E> }
 <FREE>  := free <E>; <E>
 <APP>   := ( <E> <E> )
 <DEF>   := def <VAR> : <T> = <E>; (for REPL use only)
+<ENV>   := env; <E> (for output the environment)
 
 <Q>     := lin | un | aff
 ```
@@ -81,9 +82,6 @@ let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool *
 (z  lin <lin true, lin false>)
 
 $ cargo run codes/ex12.lin
-```
-- Output Example
-```
 AST:
 ...
 ...
@@ -105,7 +103,7 @@ To show the environment, please type env
 [Type]
 lin bool
 [Evaluation]
-Bool(true)
+true
 >> (lin fn x : lin bool {
     if x {
         un <un true, un false>
