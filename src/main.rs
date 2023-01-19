@@ -27,8 +27,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             if let Ok(readline) = rl.readline(">> ") {
                 let content = skip_comment(&readline); // コメントを削除
                 if content.eq("env") {
-                    println!("[Type Environment]:\n {:?}\n", ctx);
-                    println!("[Variable Environment]\n {:?}\n", val_env);
+                    println!("[Type Environment]:\n {:?}", ctx);
+                    println!("[Variable Environment]\n {:?}", val_env);
                     continue;
                 }
                 let ast = parser::parse_expr(&content); // パース
@@ -59,7 +59,7 @@ fn interpret(
 ) {
     match ast {
         Ok((_, expr)) => {
-            println!("[Expression]\n{content}\n");
+            // println!("[Expression]\n{content}");
             // typing
             let ty = match typing::typing(&expr, ctx, 0) {
                 Ok(a) => a,
@@ -68,7 +68,7 @@ fn interpret(
                     return;
                 }
             };
-            println!("[Type]\n{:?}\n", ty);
+            println!("[Type]\n{:?}", ty);
 
             // evaluation
             let result = match eval::eval(&expr, ctx, val_env, 0) {
@@ -78,7 +78,7 @@ fn interpret(
                     return;
                 }
             };
-            println!("[Evaluation]\n{:?}\n", result);
+            println!("[Evaluation]\n{:?}", result);
         }
         Err(nom::Err::Error(e)) => {
             let msg = convert_error(content, e);

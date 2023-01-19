@@ -67,15 +67,10 @@ AST:
 ...
 ...
 
-[Expression]
-let z : lin (lin (lin bool * lin bool) -> lin bool) = lin fn x : lin (lin bool * lin bool) {    split x as a, b {        if a {            b        } else {            b        }    }};(z  lin <lin true, lin false>)
-
 [Type]
 TypeExpr { qual: Lin, prim: Bool }
-
 [Evaluation]
 Bool(false)
-
 ```
 
 ### Playing Linzin in REPL
@@ -86,15 +81,10 @@ Welcome to Linzin!
 Let's type <expression>
 To show the environment, please type env
 >> def x : lin bool = lin true;
-[Expression]
-def x : lin bool = lin true;
-
 [Type]
 TypeExpr { qual: Lin, prim: Bool }
-
 [Evaluation]
 Bool(true)
-
 >> (lin fn x : lin bool {
     if x {
         un <un true, un false>
@@ -102,30 +92,18 @@ Bool(true)
         un <un false, un true>
     }
 } x)
-[Expression]
-(lin fn x : lin bool {    if x {        un <un true, un false>    } else {        un <un false, un true>    }} x)
-
 [Type]
 TypeExpr { qual: Un, prim: Pair(TypeExpr { qual: Un, prim: Bool }, TypeExpr { qual: Un, prim: Bool }) }
-
 [Evaluation]
 Pair(true, false)
-
 >> env
 [Type Environment]:
  TypeEnv { env_lin: TypeEnvStack { vars: {0: {"x": None}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }
-
 [Variable Environment]
  ValEnv { env: ValEnvStack { vars: {0: {"x": None}} } }
-
 >> x
-[Expression]
-x
-
 typing error:
 The variable "x" is either not defined, already used, or cannot be captured.
->>
-
 ```
 
 ## Ref.
