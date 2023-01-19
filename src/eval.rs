@@ -159,8 +159,13 @@ fn eval_app<'a>(
                 safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
                 val_env.push(depth);
                 val_env.insert(f.var.clone(), arg);
+                type_env.push(depth);
+                let t = typing::typing(&expr.expr2, type_env, depth)?;
+                type_env.insert(f.var.clone(),t);
+
                 let ret = eval(&f.expr, type_env, val_env, depth);
                 val_env.pop(depth);
+                type_env.pop(depth);
                 ret
             }
             _ => Err("function should be applied to a function".into()),
@@ -172,10 +177,13 @@ fn eval_app<'a>(
                         let mut depth = depth;
                         safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
                         val_env.push(depth);
-
                         val_env.insert(f.var.clone(), arg.clone());
+                        type_env.push(depth);
+
+
                         let e = eval(&f.expr, type_env, val_env, depth);
                         val_env.pop(depth);
+                        type_env.pop(depth);
                         e
                     }
                     _ => return Err("function should be applied to a function".into()),
@@ -187,6 +195,7 @@ fn eval_app<'a>(
         _ => Err("function should be applied to a function".into()),
     }
 }
+
 fn eval_qval<'a>(
     expr: &parser::QValExpr,
     type_env: &mut typing::TypeEnv,
@@ -252,11 +261,13 @@ fn eval_split<'a>(
             val_env.push(depth);
             val_env.insert(expr.left.clone(), ReturnVal::Bool(v1));
             val_env.insert(expr.right.clone(), ReturnVal::Bool(v2));
+            type_env.push(depth);
         }
         _ => panic!("The argument of split must be of type pair"),
     }
     let ret = eval(&expr.body, type_env, val_env, depth);
     let _ = val_env.pop(depth);
+    let _ = type_env.pop(depth);
 
     ret
 }
@@ -269,6 +280,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     };
     let ret = val.clone();
     // もし変数がlinなら, 使用後freeする.
+    // TODO: 型情報が残ってない?
     match type_env.env_lin.get_mut(expr) {
         Some(_) => {
             let _ = val_env.remove(expr);
@@ -290,6 +302,7 @@ fn eval_let<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
+    let t = typing::typing(&expr.expr1, type_env, depth)?;
     let v1 = match eval(&expr.expr1, type_env, val_env, depth) {
         Ok(v) => v,
         Err(e) => return Err(e),
@@ -298,9 +311,12 @@ fn eval_let<'a>(
     safe_add(&mut depth, &1, || "Variable scope nesting is too deep").unwrap();
     val_env.push(depth);
     val_env.insert(expr.var.clone(), v1);
+    type_env.push(depth);
+    type_env.insert(expr.var.clone(), t);
 
     let v2 = eval(&expr.expr2, type_env, val_env, depth);
     _ = val_env.pop(depth);
+    _ = type_env.pop(depth);
 
     v2
 }

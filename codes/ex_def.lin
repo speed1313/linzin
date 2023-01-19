@@ -1,6 +1,8 @@
 def x : lin bool = lin true;
-(lin fn x : lin bool {
-    if x {
+(lin fn y : lin bool {
+    env;
+    if y {
+        env;
         un <un true, un false>
     } else {
         un <un false, un true>

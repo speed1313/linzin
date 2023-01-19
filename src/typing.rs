@@ -21,14 +21,14 @@ impl TypeEnv {
     }
 
     /// 型環境をpush
-    pub fn push(&mut self, depth: usize) {
+    pub(crate) fn push(&mut self, depth: usize) {
         self.env_lin.push(depth);
         self.env_un.push(depth);
         self.env_aff.push(depth);
     }
 
     /// 型環境をpop
-    fn pop(&mut self, depth: usize) -> (Option<VarToType>, Option<VarToType>, Option<VarToType>) {
+    pub(crate) fn pop(&mut self, depth: usize) -> (Option<VarToType>, Option<VarToType>, Option<VarToType>) {
         let t1 = self.env_lin.pop(depth);
         let t2 = self.env_un.pop(depth);
         let t3 = self.env_aff.pop(depth);
@@ -36,7 +36,7 @@ impl TypeEnv {
     }
 
     /// 型環境へ変数と型をpush
-    fn insert(&mut self, key: String, value: parser::TypeExpr) {
+    pub(crate) fn insert(&mut self, key: String, value: parser::TypeExpr) {
         if value.qual == parser::Qual::Lin {
             self.env_lin.insert(key, value);
         } else if value.qual == parser::Qual::Un {
@@ -185,7 +185,7 @@ fn typing_app<'a>(expr: &parser::AppExpr, env: &mut TypeEnv, depth: usize) -> TR
 }
 
 /// 修飾子付き値の型付け
-fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> TResult<'a> {
+pub(crate) fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> TResult<'a> {
     // プリミティブ型を計算
     let p = match &expr.val {
         parser::ValExpr::Bool(_) => parser::PrimType::Bool,
