@@ -128,3 +128,4 @@ The variable "x" is either not defined, already used, or cannot be captured.
 ## Ref.
 - ゼロから学ぶRust システムプログラミングの基礎から線形型システム, 高野祐輝, 講談社
 - https://github.com/ytakano/rust_zero
+- Go言語でつくるインタプリタ, Thorsten Ball 著, 設樂 洋爾 訳, O'Reilly Japan
