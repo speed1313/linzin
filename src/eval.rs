@@ -267,13 +267,7 @@ fn eval_let<'a>(
     val_env.insert(expr.var.clone(), v1);
 
     let v2 = eval(&expr.expr2, type_env, val_env, depth);
-    if let Some(table) = val_env.pop(depth) {
-        if depth == 1 {
-            for (keys, value) in table {
-                val_env.insert(keys, value.unwrap());
-            }
-        }
-    }
+    _ = val_env.pop(depth);
 
     v2
 }
