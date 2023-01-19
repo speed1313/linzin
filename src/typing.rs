@@ -11,6 +11,8 @@ pub struct TypeEnv {
     pub env_aff: TypeEnvStack, // aff用
 }
 
+
+
 impl TypeEnv {
     pub fn new() -> TypeEnv {
         TypeEnv {

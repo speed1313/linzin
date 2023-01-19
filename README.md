@@ -89,9 +89,9 @@ AST:
 ...
 
 [Type]
-TypeExpr { qual: Lin, prim: Bool }
+lin bool
 [Evaluation]
-Bool(false)
+false
 ```
 
 ### Playing Linzin in REPL
@@ -103,7 +103,7 @@ Let's type <expression>
 To show the environment, please type env
 >> def x : lin bool = lin true;
 [Type]
-TypeExpr { qual: Lin, prim: Bool }
+lin bool
 [Evaluation]
 Bool(true)
 >> (lin fn x : lin bool {
@@ -114,9 +114,9 @@ Bool(true)
     }
 } x)
 [Type]
-TypeExpr { qual: Un, prim: Pair(TypeExpr { qual: Un, prim: Bool }, TypeExpr { qual: Un, prim: Bool }) }
+un (un bool * un bool)
 [Evaluation]
-Pair(true, false)
+(true , false)
 >> env
 [Type Environment]:
  TypeEnv { env_lin: TypeEnvStack { vars: {0: {"x": None}} }, env_un: TypeEnvStack { vars: {0: {}} }, env_aff: TypeEnvStack { vars: {0: {}} } }

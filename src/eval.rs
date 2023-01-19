@@ -3,7 +3,7 @@
 //!
 
 use crate::{helper::safe_add, parser, typing};
-use std::{borrow::Cow, collections::BTreeMap};
+use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 type VarToVal = BTreeMap<String, Option<ReturnVal>>;
 
@@ -14,6 +14,16 @@ pub enum ReturnVal {
     Bool(bool),          // 真偽値リテラル
     Pair(bool, bool),    // ペア
     Fun(parser::FnExpr), // 関数
+}
+
+impl fmt::Display for ReturnVal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ReturnVal::Bool(v) => write!(f, "{v}"),
+            ReturnVal::Pair(t1, t2) => write!(f, "({t1} , {t2})"),
+            ReturnVal::Fun(expr) => write!(f, "{:?}",expr),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

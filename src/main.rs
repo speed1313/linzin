@@ -68,7 +68,7 @@ fn interpret(
                     return;
                 }
             };
-            println!("[Type]\n{:?}", ty);
+            println!("[Type]\n{}", ty);
 
             // evaluation
             let result = match eval::eval(&expr, ctx, val_env, 0) {
@@ -78,7 +78,7 @@ fn interpret(
                     return;
                 }
             };
-            println!("[Evaluation]\n{:?}", result);
+            println!("[Evaluation]\n{}", result);
         }
         Err(nom::Err::Error(e)) => {
             let msg = convert_error(content, e);
