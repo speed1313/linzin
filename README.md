@@ -23,7 +23,7 @@ Linzin is an extended implementation of Linz, a linear type system programming l
      ```
      To avoid this problem, we need to implement garbage collection.
    - By looking forward the structure of the program(AST), we can know which variables will be used in the future, and vice versa.
-   - The example of the Linzin program that need gc
+   - The example of the Linzin program that need gc?
    ```
     let w : un bool = un false;
     let x : un bool = un true;
@@ -32,7 +32,7 @@ Linzin is an extended implementation of Linz, a linear type system programming l
     z
    ```
    Though only z is used in the program, the memory of w,x, and y will be allocated in evaluating for a long time.
-   To resolve this problem, before evaluating the expression, we should
+   To resolve this problem, before evaluating the expression, we should...?
 - [x] let the interpreter to be used in REPL format
 
 ## Syntax of Linzin

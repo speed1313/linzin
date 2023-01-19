@@ -21,7 +21,7 @@ impl fmt::Display for ReturnVal {
         match self {
             ReturnVal::Bool(v) => write!(f, "{v}"),
             ReturnVal::Pair(t1, t2) => write!(f, "({t1} , {t2})"),
-            ReturnVal::Fun(expr) => write!(f, "{:?}",expr),
+            ReturnVal::Fun(expr) => write!(f, "{:?}", expr),
         }
     }
 }
@@ -113,16 +113,14 @@ impl ValEnvStack {
     // スタックを上から辿っていき, 初めに見つかる変数の値をremove
     fn remove(&mut self, key: &str) -> Option<(usize, Option<ReturnVal>)> {
         for (depth, elm) in self.vars.iter_mut().rev() {
-            if let Some(a) = elm.remove(key){
+            if let Some(a) = elm.remove(key) {
                 return Some((*depth, a));
-            }else{
+            } else {
                 continue;
             }
         }
         None
     }
-
-
 }
 
 pub fn eval<'a>(
@@ -271,7 +269,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     };
     let ret = val.clone();
     // もし変数がlinなら, 使用後freeする.
-    match type_env.env_lin.get_mut(expr){
+    match type_env.env_lin.get_mut(expr) {
         Some(_) => {
             let _ = val_env.remove(expr);
         }
