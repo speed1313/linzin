@@ -8,7 +8,7 @@
 //! ```text
 //! <VAR>   := 1文字以上のアルファベットから成り立つ変数
 //!
-//! <E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF>
+//! <E>     := <LET> | <IF> | <SPLIT> | <FREE> | <APP> | <VAR> | <QVAL> | <DEF> | <ENV>
 //!
 //! <LET>   := let <VAR> : <T> = <E>; <E>
 //! <IF>    := if <E> { <E> } else { <E> }
@@ -16,6 +16,7 @@
 //! <FREE>  := free <E>; <E>
 //! <APP>   := ( <E> <E> )
 //! <DEF>   := def <VAR> : <T> = <E>; (REPL専用)
+//! <ENV>   := env; <E>
 //!
 //! <Q>     := lin | un | aff
 //!
@@ -58,6 +59,7 @@ pub enum Expr {
     Var(String),      // 変数
     QVal(QValExpr),   // 値
     Def(DefExpr),     // 変数定義
+    Env(EnvExpr),     // 環境表示
 }
 
 /// 関数適用
@@ -202,6 +204,18 @@ pub struct FreeExpr {
     pub expr: Box<Expr>,
 }
 
+/// env文
+///
+/// ```text
+/// <ENV> := env; <E>
+///
+/// env; expr
+/// ```
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct EnvExpr {
+    pub expr: Box<Expr>,
+}
+
 /// 修飾子付き型
 ///
 /// ```text
@@ -261,6 +275,7 @@ pub fn parse_expr(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
         "aff" => parse_qval(Qual::Aff, i),
         "(" => parse_app(i),
         "def" => parse_def(i),
+        "env" => parse_env(i),
         _ => Ok((i, Expr::Var(val.to_string()))),
     }
 }
@@ -563,4 +578,14 @@ fn parse_def(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
             expr: Box::new(e1),
         }),
     ))
+}
+
+/// envをパース
+/// env; <E>
+fn parse_env(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
+    let (i, _) = char(';')(i)?;
+    let (i, _) = multispace0(i)?;
+    let (i, e) = parse_expr(i)?; // 変数の値
+    let (i, _) = multispace0(i)?;
+    Ok((i, Expr::Env(EnvExpr { expr: Box::new(e) })))
 }

@@ -155,6 +155,7 @@ pub fn typing<'a>(expr: &parser::Expr, env: &mut TypeEnv, depth: usize) -> TResu
         parser::Expr::Var(e) => typing_var(e, env),
         parser::Expr::Let(e) => typing_let(e, env, depth),
         parser::Expr::Def(e) => typing_def(e, env, depth),
+        parser::Expr::Env(e) => typing_env(e, env, depth),
     }
 }
 
@@ -412,6 +413,7 @@ fn typing_let<'a>(expr: &parser::LetExpr, env: &mut TypeEnv, depth: usize) -> TR
 
     Ok(t2)
 }
+
 /// defの型付け
 fn typing_def<'a>(expr: &parser::DefExpr, env: &mut TypeEnv, depth: usize) -> TResult<'a> {
     // 変数束縛
@@ -423,4 +425,11 @@ fn typing_def<'a>(expr: &parser::DefExpr, env: &mut TypeEnv, depth: usize) -> TR
     env.insert(expr.var.clone(), t1.clone()); // 変数の型をinsert
 
     Ok(t1)
+}
+
+/// envの型付け
+fn typing_env<'a>(expr: &parser::EnvExpr, env: &mut TypeEnv, depth: usize) -> TResult<'a> {
+    let t = typing(&expr.expr, env, depth)?;
+
+    Ok(t)
 }

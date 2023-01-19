@@ -51,6 +51,13 @@ impl ValEnv {
             None
         }
     }
+    fn remove(&mut self, key: &str) -> Option<Option<ReturnVal>> {
+        if let Some((_, t)) = self.env.remove(key) {
+            Some(t)
+        } else {
+            None
+        }
+    }
 }
 
 /// 変数環境のスタック
@@ -92,6 +99,20 @@ impl ValEnvStack {
         }
         None
     }
+
+    // スタックを上から辿っていき, 初めに見つかる変数の値をremove
+    fn remove(&mut self, key: &str) -> Option<(usize, Option<ReturnVal>)> {
+        for (depth, elm) in self.vars.iter_mut().rev() {
+            if let Some(a) = elm.remove(key){
+                return Some((*depth, a));
+            }else{
+                continue;
+            }
+        }
+        None
+    }
+
+
 }
 
 pub fn eval<'a>(
@@ -109,6 +130,7 @@ pub fn eval<'a>(
         parser::Expr::Var(e) => eval_var(e, type_env, val_env),
         parser::Expr::Let(e) => eval_let(e, type_env, val_env, depth),
         parser::Expr::Def(e) => eval_def(e, type_env, val_env, depth),
+        parser::Expr::Env(e) => eval_env(e, type_env, val_env, depth),
     }
 }
 
@@ -231,21 +253,24 @@ fn eval_split<'a>(
     ret
 }
 fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv) -> VResult<'a> {
-    let val = val_env.get_mut(expr);
+    let mut binding = val_env.clone();
+    let val = binding.get_mut(expr);
     let val = match val {
         Some(v) => v,
         None => return Err("variable not found".into()),
     };
     let ret = val.clone();
     // もし変数がlinなら, 使用後freeする.
-    match type_env.env_lin.get_mut(expr) {
+    match type_env.env_lin.get_mut(expr){
         Some(_) => {
-            *val = None;
+            let _ = val_env.remove(expr);
         }
         None => (),
     }
     match type_env.env_aff.get_mut(expr) {
-        Some(_) => *val = None,
+        Some(_) => {
+            let _ = val_env.remove(expr);
+        }
         None => (),
     }
     ret.ok_or("variable not found".into())
@@ -284,6 +309,21 @@ fn eval_def<'a>(
     };
     val_env.insert(expr.var.clone(), v1.clone());
     Ok(v1)
+}
+
+fn eval_env<'a>(
+    expr: &parser::EnvExpr,
+    type_env: &mut typing::TypeEnv,
+    val_env: &mut ValEnv,
+    depth: usize,
+) -> VResult<'a> {
+    println!("[Type Environment]:\n {:?}", type_env);
+    println!("[Variable Environment]\n {:?}", val_env);
+    let v = match eval(&expr.expr, type_env, val_env, depth) {
+        Ok(v) => v,
+        Err(e) => return Err(e),
+    };
+    Ok(v)
 }
 
 #[cfg(test)]
