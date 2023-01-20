@@ -1,0 +1,9 @@
+let z : un bool = un false;
+((un fn z : un bool {
+    let x : un bool = un true;
+    un fn y : un bool {
+        let x : un bool = un false;
+        env;
+        un <x, z> // x をキャプチャ 型環境を保存?
+    } // xがスタックから解放される
+} un true) un false)

@@ -1,8 +1,11 @@
 let z : un (un bool -> un (un bool * un bool)) = (un fn z : un bool {
+    let w : un bool = un true;
     let x : un bool = un true;
     un fn y : un bool {
         un <x, y> // x をキャプチャ. 型環境を保存しないと, (z un false)でvariable x not found エラーが起きる
-    } // xがスタックから解放される
+    } // xがスタックから解放される. 関数と一緒にキャプチャした変数を含めた環境も返す.
 } un true);
-env;
+env; // wはもはやいらないので環境から消したい. -> gcで消す.
 (z un false)
+// xをglobal変数として取り扱うと, クロージャが適用された後も残ってしまうし, 別のところから使われたりしてしまう.
+// そこで, xをクロージャと一緒に保存し, クロージャが使われたタイミングでxを解放する.

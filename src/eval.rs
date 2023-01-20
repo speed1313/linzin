@@ -13,7 +13,7 @@ type VResult<'a> = Result<ReturnVal, Cow<'a, str>>;
 pub enum ReturnVal {
     Bool(bool),          // 真偽値リテラル
     Pair(bool, bool),    // ペア
-    Fun(parser::FnExpr), // 関数
+    Fun(Closure), // 関数
 }
 
 impl fmt::Display for ReturnVal {
@@ -21,7 +21,7 @@ impl fmt::Display for ReturnVal {
         match self {
             ReturnVal::Bool(v) => write!(f, "{v}"),
             ReturnVal::Pair(t1, t2) => write!(f, "({t1} , {t2})"),
-            ReturnVal::Fun(expr) => write!(f, "{:?}", expr),
+            ReturnVal::Fun(c) => write!(f, "{:?}", c),
         }
     }
 }
@@ -72,7 +72,7 @@ impl ValEnv {
 
 /// 変数環境のスタック
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
-struct ValEnvStack {
+pub struct ValEnvStack {
     vars: BTreeMap<usize, VarToVal>,
 }
 
@@ -123,6 +123,18 @@ impl ValEnvStack {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Closure{
+    pub(crate) f : parser::FnExpr,
+    pub(crate) env : ValEnv,
+}
+
+impl Closure{
+    pub fn new(f : parser::FnExpr, env: ValEnv) -> Closure{
+        Closure{f:f, env}
+    }
+}
+
 pub fn eval<'a>(
     expr: &parser::Expr,
     type_env: &mut typing::TypeEnv,
@@ -148,51 +160,29 @@ fn eval_app<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
+    let f = eval(&expr.expr1, type_env, val_env, depth)?;
+
     let arg = eval(&expr.expr2, type_env, val_env, depth)?;
-    match &*expr.expr1 {
-        parser::Expr::QVal(val) => match val {
-            parser::QValExpr {
-                qual: _,
-                val: parser::ValExpr::Fun(f),
-            } => {
-                let mut depth = depth;
-                safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
-                val_env.push(depth);
-                val_env.insert(f.var.clone(), arg);
-                type_env.push(depth);
-                let t = typing::typing(&expr.expr2, type_env, depth)?;
-                type_env.insert(f.var.clone(),t);
-
-                let ret = eval(&f.expr, type_env, val_env, depth);
-                val_env.pop(depth);
-                type_env.pop(depth);
-                ret
-            }
-            _ => Err("function should be applied to a function".into()),
-        },
-        parser::Expr::Var(a) => {
-            if let Some(v) = val_env.clone().get_mut(a).unwrap() {
-                match v {
-                    ReturnVal::Fun(f) => {
-                        let mut depth = depth;
-                        safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
-                        val_env.push(depth);
-                        val_env.insert(f.var.clone(), arg.clone());
-                        type_env.push(depth);
-
-
-                        let e = eval(&f.expr, type_env, val_env, depth);
-                        val_env.pop(depth);
-                        type_env.pop(depth);
-                        e
-                    }
-                    _ => return Err("function should be applied to a function".into()),
+    match f {
+        ReturnVal::Fun(c) => {
+            let mut depth = depth;
+            safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
+            val_env.push(depth);
+            // insert closure env to val_env with keeping the order
+            for (_, v) in c.env.clone().env.vars.into_iter().rev() {
+                for (k2, v2) in v.into_iter() {
+                    val_env.insert(k2, v2.unwrap());
                 }
-            } else {
-                Err("function should be applied to a function".into())
             }
-        }
-        _ => Err("function should be applied to a function".into()),
+            val_env.insert(c.f.var.clone(), arg.clone());
+            type_env.push(depth);
+            let e = eval(&c.f.expr, type_env, val_env, depth);
+            val_env.pop(depth);
+            type_env.pop(depth);
+            //dbg!("closure env",c);
+            e
+        },
+        _ => Err("app expr should be closure".into()),
     }
 }
 
@@ -211,9 +201,18 @@ fn eval_qval<'a>(
                 (ReturnVal::Bool(v1), ReturnVal::Bool(v2)) => Ok(ReturnVal::Pair(v1, v2)),
                 _ => Err("pair values should be bool".into()),
             }
-        }
+        },
         // 使用する時までASTを保持しておく
-        parser::ValExpr::Fun(e) => Ok(ReturnVal::Fun(e.clone())),
+        parser::ValExpr::Fun(e) => {
+            let mut depth = depth;
+            safe_add(&mut depth, &1, || "Variable scope nesting is too deep")?;
+            val_env.push(depth);
+            type_env.push(depth);
+            let f = eval_fun(e, type_env, val_env, depth)?;
+            val_env.pop(depth);
+            type_env.pop(depth);
+            Ok(f)
+        }
     };
     p
 }
@@ -280,7 +279,6 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     };
     let ret = val.clone();
     // もし変数がlinなら, 使用後freeする.
-    // TODO: 型情報が残ってない?
     match type_env.env_lin.get_mut(expr) {
         Some(_) => {
             let _ = val_env.remove(expr);
@@ -341,13 +339,25 @@ fn eval_env<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
-    println!("[Type Environment]:\n {:?}", type_env);
-    println!("[Variable Environment]\n {:?}", val_env);
+    println!("[Type Environment]:\n {:#?}", type_env);
+    println!("[Variable Environment]\n {:#?}", val_env);
     let v = match eval(&expr.expr, type_env, val_env, depth) {
         Ok(v) => v,
         Err(e) => return Err(e),
     };
     Ok(v)
+}
+
+fn eval_fun<'a>(
+    expr: &parser::FnExpr,
+    _type_env: &mut typing::TypeEnv,
+    val_env: &mut ValEnv,
+    _depth: usize,
+) -> VResult<'a> {
+    // check if function use free variables
+    let env = val_env.clone();
+    return Ok(ReturnVal::Fun(Closure::new(expr.clone(), env)));
+
 }
 
 #[cfg(test)]
