@@ -1,28 +1,29 @@
-use parser;
-use typing;
-use eval::{*,ValEnvStack};
+use crate::parser::FnExpr;
+use crate::{parser, typing,eval};
+use crate::eval::{*,ValEnvStack};
 
+// クロージャが持つ環境から, 不要な変数を削除する
 
-
-/*
+pub struct Object {
+    closure: Closure,
+    is_marked: bool,
+}
 pub struct GC{
-    pub(crate) closures : Vec<Closure>,
+    pub(crate) closures : Vec<Object>,
 }
 
 impl GC{
     pub fn new() -> GC{
         GC{closures:Vec::new()}
     }
-    pub fn add(&mut self, c : Closure){
-        self.closures.push(c);
+    pub fn insert(&mut self, c : Closure){
+        self.closures.push(Object{closure: c, is_marked: false});
     }
-    pub fn get(&self, key : &str) -> Option<parser::Expr>{
-        for c in self.closures.iter(){
-            if let Some(e) = c.get(key){
-                return Some(e);
-            }
-        }
-        None
+
+    pub fn mark(&mut self, v : ValEnvStack, f : FnExpr){
+        // closure内の変数を探索
+        
     }
-}*/
+
+}
 
