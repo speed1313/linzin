@@ -1,0 +1,11 @@
+let z : un bool = (lin fn y : lin bool {
+    env;
+    if y {
+        env; // y should already be freed here
+        un true
+    } else {
+        un false
+    }
+} lin true);
+env;
+z

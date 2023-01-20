@@ -1,0 +1,12 @@
+let x : un bool = un true;
+let y : un bool = un true;
+let f : lin (un (un bool * un bool) -> un bool) = lin fn z : un (un bool * un bool) {
+    split z as a, b {
+        if a {
+            x
+        } else {
+            x
+        }
+    }
+};
+(f un <un false, un true>)

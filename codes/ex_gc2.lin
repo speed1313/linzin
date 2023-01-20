@@ -1,0 +1,8 @@
+let z : un (un bool -> un (un bool * un bool)) = (un fn z : un bool {
+    let x : un bool = un true;
+    un fn y : un bool {
+        un <x, y> // x をキャプチャ. 型環境を保存しないと, (z un false)でvariable x not found エラーが起きる
+    } // xがスタックから解放される
+} un true);
+env;
+(z un false)

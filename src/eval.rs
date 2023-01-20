@@ -276,7 +276,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
     let val = binding.get_mut(expr);
     let val = match val {
         Some(v) => v,
-        None => return Err("variable not found".into()),
+        None => return Err(format!("variable {expr} not found").into()),
     };
     let ret = val.clone();
     // もし変数がlinなら, 使用後freeする.
@@ -293,7 +293,7 @@ fn eval_var<'a>(expr: &str, type_env: &mut typing::TypeEnv, val_env: &mut ValEnv
         }
         None => (),
     }
-    ret.ok_or("variable not found".into())
+    ret.ok_or(format!("variable {expr} not found").into())
 }
 
 fn eval_let<'a>(
