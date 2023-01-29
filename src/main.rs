@@ -32,7 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("[Variable Environment]\n {:?}", val_env);
                     continue;
                 }
-                let ast = parser::parse_expr(&content); // パース
+                let ast = parser::parse(&content); // パース
+
                 interpret(&content, &mut ctx, &mut val_env, ast);
             } else {
                 break;
@@ -44,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // ファイル読み込み
     let content = fs::read_to_string(&args[1])?;
     let content = skip_comment(&content); // コメントを削除
-    let ast = parser::parse_expr(&content); // パース
+    let ast = parser::parse(&content); // パース
     println!("AST:\n{:#?}\n", ast);
     let mut ctx = typing::TypeEnv::new();
     let mut val_env = eval::ValEnv::new();

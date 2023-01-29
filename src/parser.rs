@@ -261,6 +261,22 @@ impl fmt::Display for PrimType {
     }
 }
 
+pub fn parse(i: &str)-> IResult<&str, Expr, VerboseError<&str>> {
+    let ast = parse_expr(i);
+    match ast {
+        Ok((i, ast)) => match i{
+            "" => Ok((i, ast)),
+            _ => Err(nom::Err::Error(VerboseError {
+                errors: vec![(
+                    i,
+                    nom::error::VerboseErrorKind::Nom(nom::error::ErrorKind::Eof),
+                )],
+            }))
+        }
+        Err(e) => Err(e),
+    }
+}
+
 pub fn parse_expr(i: &str) -> IResult<&str, Expr, VerboseError<&str>> {
     let (i, _) = multispace0(i)?;
     let (i, val) = alt((alpha1, tag("(")))(i)?;

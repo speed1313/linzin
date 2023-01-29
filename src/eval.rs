@@ -300,6 +300,7 @@ fn eval_let<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
+    // error if closure capture variable
     let t = typing::typing(&expr.expr1, type_env, depth)?;
     let v1 = match eval(&expr.expr1, type_env, val_env, depth) {
         Ok(v) => v,
