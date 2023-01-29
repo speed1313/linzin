@@ -2,7 +2,11 @@
 //!
 //!
 
-use crate::{helper::safe_add, parser, typing};
+use crate::{
+    helper::safe_add,
+    parser::{self},
+    typing,
+};
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 type VarToVal = BTreeMap<String, Option<ReturnVal>>;
@@ -11,9 +15,9 @@ type VResult<'a> = Result<ReturnVal, Cow<'a, str>>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ReturnVal {
-    Bool(bool),          // 真偽値リテラル
-    Pair(bool, bool),    // ペア
-    Fun(Closure), // 関数
+    Bool(bool),       // 真偽値リテラル
+    Pair(bool, bool), // ペア
+    Fun(Closure),     // 関数
 }
 
 impl fmt::Display for ReturnVal {
@@ -124,14 +128,14 @@ impl ValEnvStack {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Closure{
-    pub(crate) f : parser::FnExpr,
-    pub(crate) env : ValEnv,
+pub struct Closure {
+    pub(crate) f: parser::FnExpr,
+    pub(crate) env: ValEnv,
 }
 
-impl Closure{
-    pub fn new(f : parser::FnExpr, env: ValEnv) -> Closure{
-        Closure{f:f, env}
+impl Closure {
+    pub fn new(f: parser::FnExpr, env: ValEnv) -> Closure {
+        Closure { f: f, env }
     }
 }
 
@@ -181,7 +185,7 @@ fn eval_app<'a>(
             type_env.pop(depth);
             //dbg!("closure env",c);
             e
-        },
+        }
         _ => Err("app expr should be closure".into()),
     }
 }
@@ -201,7 +205,7 @@ fn eval_qval<'a>(
                 (ReturnVal::Bool(v1), ReturnVal::Bool(v2)) => Ok(ReturnVal::Pair(v1, v2)),
                 _ => Err("pair values should be bool".into()),
             }
-        },
+        }
         // 使用する時までASTを保持しておく
         parser::ValExpr::Fun(e) => {
             let mut depth = depth;
@@ -300,7 +304,6 @@ fn eval_let<'a>(
     val_env: &mut ValEnv,
     depth: usize,
 ) -> VResult<'a> {
-    // error if closure capture variable
     let t = typing::typing(&expr.expr1, type_env, depth)?;
     let v1 = match eval(&expr.expr1, type_env, val_env, depth) {
         Ok(v) => v,
@@ -358,7 +361,6 @@ fn eval_fun<'a>(
     // check if function use free variables
     let env = val_env.clone();
     return Ok(ReturnVal::Fun(Closure::new(expr.clone(), env)));
-
 }
 
 #[cfg(test)]

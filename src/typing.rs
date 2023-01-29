@@ -28,7 +28,10 @@ impl TypeEnv {
     }
 
     /// 型環境をpop
-    pub(crate) fn pop(&mut self, depth: usize) -> (Option<VarToType>, Option<VarToType>, Option<VarToType>) {
+    pub(crate) fn pop(
+        &mut self,
+        depth: usize,
+    ) -> (Option<VarToType>, Option<VarToType>, Option<VarToType>) {
         let t1 = self.env_lin.pop(depth);
         let t2 = self.env_un.pop(depth);
         let t3 = self.env_aff.pop(depth);
@@ -185,7 +188,11 @@ fn typing_app<'a>(expr: &parser::AppExpr, env: &mut TypeEnv, depth: usize) -> TR
 }
 
 /// 修飾子付き値の型付け
-pub(crate) fn typing_qval<'a>(expr: &parser::QValExpr, env: &mut TypeEnv, depth: usize) -> TResult<'a> {
+pub(crate) fn typing_qval<'a>(
+    expr: &parser::QValExpr,
+    env: &mut TypeEnv,
+    depth: usize,
+) -> TResult<'a> {
     // プリミティブ型を計算
     let p = match &expr.val {
         parser::ValExpr::Bool(_) => parser::PrimType::Bool,

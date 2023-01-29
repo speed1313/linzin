@@ -1,8 +1,8 @@
 mod eval;
+mod gc;
 mod helper;
 mod parser;
 mod typing;
-mod gc;
 use nom::error::convert_error;
 use nom::{error::VerboseError, IResult};
 use rustyline::Editor;
