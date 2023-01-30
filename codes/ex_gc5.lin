@@ -1,0 +1,9 @@
+let x: lin bool = lin true;
+
+let z : lin (lin bool -> lin bool) = lin fn y : lin bool {
+    free y;
+    x  // xをキャプチャして消費する
+};
+
+(z lin false);  // zクロージャーを引数に適用する
+これ以降は無視される

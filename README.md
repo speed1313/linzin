@@ -9,6 +9,9 @@ Linzin is an extended implementation of Linz, a linear type system programming l
 - [x] add affine type
 - [x] implement interpreter, or evaluator
 - [ ] implement garbage collection(mark and sweep)
+  - [ ] get free variables list from closure
+  - [ ] allocate them to the heap
+  - [ ] collects garbage by gc
 - [x] let the interpreter to be used in REPL format
 
 ## Syntax of Linzin

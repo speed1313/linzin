@@ -1,0 +1,20 @@
+// クロージャーを返す関数t
+let t : lin (lin bool -> lin (lin bool -> un bool)) = lin fn u : lin bool {
+    free u;
+    let x: un bool = un true;
+    // 戻り値となるクロージャー
+    lin fn y : lin bool {
+        free y;
+        x  // 暗黙的な参照を使ってキャプチャ
+    }
+    // ここでxがスコープを抜けるが、もしここでxの値を回収すると
+    // クロージャーにキャプチャした参照が無効（dangling）になってしまう
+    // なので、ここでは回収できない
+    // クロージャにキャプチャした段階でxをheapに移動させる
+};
+// 関数tを評価して、クロージャーvを得る
+let v : lin (lin bool -> un bool) = (t lin true);
+// クロージャーvを評価する
+let s : un bool = (v lin false);
+// これ以降は誰もxの値を所有or参照していないので回収できるようになる
+s
